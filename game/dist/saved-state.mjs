@@ -1,4 +1,4 @@
-import {validateRun} from './engine.js';
+import {validateRun} from './engine.js?v=blackline-5';
 
 // Stored game state is untrusted input, including when another same-origin page
 // or an older release wrote it. Never render the raw storage object.

@@ -1,7 +1,7 @@
-import {readSavedState} from './saved-state.mjs';
+import {readSavedState} from './saved-state.mjs?v=blackline-5';
 import {renderSyntony, renderMissionContext, renderRealWorldDebrief, renderPracticeNote, renderAssuranceQuestion, realWorldHandoff} from './syntony.js';
 import {arenaAuth,mountAuthPanel} from './auth.mjs?v=blackline-2';
-import {CAMPAIGNS, createRun, evaluateAttack, applyGovernance, replay, nextLevel, answerChallenge, retryLevel} from './engine.js';
+import {CAMPAIGNS, createRun, evaluateAttack, applyGovernance, replay, nextLevel, answerChallenge, retryLevel} from './engine.js?v=blackline-5';
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const roster = [
