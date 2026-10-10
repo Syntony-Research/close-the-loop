@@ -1,5 +1,5 @@
 // Sign-in transport. Provider credentials remain on the hosted service.
-import {ARENA_API_URL} from './arena-config.mjs';
+import {ARENA_API_URL} from './arena-config.mjs?v=20261009-3';
 const SESSION_KEY='syntony-arena-session-v1';
 const VERIFIER_KEY='syntony-arena-auth-verifier-v1';
 const PROVIDERS=[{id:'github',label:'GitHub'},{id:'microsoft',label:'Microsoft'},{id:'google',label:'Google'}];

@@ -1,7 +1,7 @@
-import { SCENARIOS, CONTROLS, evaluate, makePack, markdownReport } from './engine.mjs';
-import { createSignal } from './signal.mjs';
-import { mountSystems } from './systems.mjs';
-import {arenaAuth,mountAuthPanel} from './arena-auth.mjs';
+import { SCENARIOS, CONTROLS, evaluate, makePack, markdownReport } from './engine.mjs?v=20261009-3';
+import { createSignal } from './signal.mjs?v=20261009-3';
+import { mountSystems } from './systems.mjs?v=20261009-3';
+import {arenaAuth,mountAuthPanel} from './arena-auth.mjs?v=20261009-3';
 mountSystems();
 
 const $=id=>document.getElementById(id);
