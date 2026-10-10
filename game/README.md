@@ -6,6 +6,16 @@ BLACKLINE is a browser game about AI security, governance, and assurance. Nine o
 
 The characters and scenarios are fictional. The game engine simulates outcomes locally. It does not evaluate a real model, invoke a model API, execute financial transactions, or operate government systems.
 
+## From the simulation to a real system
+
+Syntony starts with the decision a team needs to make, scopes the evaluation around intended use and consequences, and keeps evidence connected to ownership, controls, release decisions, and retesting. Every mission includes a human and institutional question; debriefs identify the additional evidence a real engagement would need.
+
+- [Human-led services](https://www.syntonyresearch.ai/services/): Red Teaming & Evaluation, Governance & Decision Support, and Continuous Evaluation & Assurance.
+- [Resonance](https://www.syntonyresearch.ai/assets/interactive/resonance.html): an in-development product with an illustrative public preview connecting attack paths, evidence, controls, ownership, and retests.
+- [GovTune AI waitlist](https://www.syntonyresearch.ai/products/govtune-ai/#waitlist): software in development to draft governance records from evaluation traces for human review.
+
+A SOC 2 report is useful assurance within its scope. It should be considered alongside evidence for the AI workflow's intended uses, failure modes, human impacts, and changes. Winning this simulation does not establish assurance or compliance for any real deployment. Product links open separately and do not automatically upload game evidence to either product.
+
 ## Run locally
 
 Use Node.js 24 or newer. No dependency installation or API key is needed.
@@ -35,6 +45,8 @@ The existing Agent Arena toolkit has its own tests and replay commands in the [r
 | `dist/index.html` | Game entry point |
 | `dist/app.js` | Interface, progression, browser persistence, and evidence export |
 | `dist/engine.js` | Campaigns, mission rules, scoring, and level gates |
+| `dist/mission-context.js` | Human and institutional stakes for all 20 missions |
+| `dist/syntony.js`, `dist/syntony.css` | Services, product links, real-workflow handoffs, and presentation |
 | `dist/assets/` | Static game artwork and supporting assets |
 | `dist/auth.mjs` | Hosted sign-in client, when included in the release |
 | `dist/auth-config.mjs` | The deployment's public authentication service address |
