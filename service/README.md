@@ -10,6 +10,14 @@ BLACKLINE is a local simulation. Its deployed service is used for provider sign-
 
 Only a separately authorized legacy hosted experiment should opt into `ARENA_INFERENCE_ENABLED=true`, `ARENA_LIVE_ENABLED=true`, verified provider configuration, and spending quotas. The new capability flag is deliberately independent of older live-model settings.
 
+## BLACKLINE optional OpenAI payload probe
+
+BLACKLINE's 20-mission Evaluate → Govern → Assure scoring stays deterministic, offline and playable without inference. The new Evaluate attack workbench captures a participant-authored fictional payload. A **separate optional** hosted OpenAI probe can test the payload before and after the selected governance control, producing a model-generated fictional agent response and proposed tool intent. It executes **no tools**, touches **no customer systems**, and cannot alter or unlock game scores. The exported evidence pack distinguishes the operator's unverified hypothesis from model-generated synthetic output.
+
+The new `POST /api/blackline/probe` endpoint is unavailable by default and is **independent of** legacy `ARENA_INFERENCE_ENABLED`. To make the optional button appear, an operator must deploy the rebuilt server bundle to the hosted service, bind durable auth and quota infrastructure, set `BLACKLINE_PROBE_ENABLED=true`, `OPENAI_VERIFIED=true`, and provision a server-side `OPENAI_API_KEY`. Set `OPENAI_MODEL` to an available, verified model capable of strict JSON-schema Responses output. Probe spend shares the existing limit of **12 requests per signed-in account per hour / 60 shared per day**. Only fictional data (20–1,200 characters) can be sent. Never embed the key in static frontend code or GitHub.
+
+The frontend discovers availability from `GET /api/config`; without the operator flags and quotas, the page identifies hosted testing as disconnected and offers the fully functional local workbench. A GitHub Pages deployment of the website **does not automatically redeploy** the separately hosted `*.chatgpt.site` Worker. Update that service using its authorized hosting workflow before declaring real OpenAI inference live. Perform an authenticated before/after smoke test and confirm quota enforcement before enabling the flag.
+
 ## Build and verify
 
 Use Node 22.13 or newer (Node 24 recommended). No package installation is needed. Tests use synthetic credentials, local SQLite, and mocked HTTP; they do not load environment files or contact model or identity providers.

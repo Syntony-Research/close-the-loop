@@ -92,3 +92,21 @@
 /* Mission gates and progressive decision puzzles. */
 .win-condition{margin-top:24px;padding:18px 20px;border-left:2px solid var(--acid,#eaff65);background:#eaff6508;display:grid;gap:7px}.win-condition b,.win-condition small{font:11px 'IBM Plex Mono',monospace;letter-spacing:.06em}.win-condition span{font-size:14px;line-height:1.6}.win-condition small{color:#a9b9bd}.step-intro b{display:block;margin-top:12px;color:#d6e7bc}.decision-console{margin:30px 0;padding-top:26px;border-top:1px solid #334448}.decision-console>h3{font:700 32px 'Barlow Condensed',sans-serif;margin:8px 0}.decision-console>p{color:#b2c0c4;line-height:1.6}.decision-field{border:0;border-top:1px solid #2b3c42;margin:24px 0;padding:20px 0 0;min-width:0}.decision-field legend{padding:0 12px 0 0;font-weight:600;line-height:1.5}.decision-field legend>span{font-family:'IBM Plex Mono',monospace;color:#eaff65;font-size:12px;margin-right:8px}.decision-options{display:grid;gap:8px}.decision-option{width:100%;display:flex;text-align:left;align-items:flex-start;gap:12px;padding:15px;border:1px solid #2d4147;background:#0c161c;color:#cad6db;font:400 14px/1.5 'Barlow',sans-serif;cursor:pointer}.decision-option>span{color:#738f97;flex-shrink:0;min-width:18px;font-family:'IBM Plex Mono',monospace}.decision-option.selected{border-color:#eaff65;background:#eaff6510;color:#f0f5e8}.decision-option.selected>span{color:#eaff65}.decision-option:hover{border-color:#829a99}.decision-option:focus-visible{outline:2px solid #82e8ee;outline-offset:3px}.pipeline-order{padding:15px 15px 15px 36px;background:#050b10;font:12px/1.7 'IBM Plex Mono',monospace;color:#b8d5d6}.pipeline-order li{padding:6px 0}.pipeline-order .empty{color:#77909a}.pass-checks{display:grid;gap:8px;margin:22px 0}.pass-check{padding:14px 16px;border:1px solid #28433f;background:#82e8ee05}.pass-check b{font-size:14px;line-height:1.5;color:#a6dac8}.pass-check.failed{border-color:#8c4e48;background:#ef6f690a}.pass-check.failed b{color:#ffaaa2}.pass-check p{margin:8px 0 0;color:#c4b7b4;font-size:13px;line-height:1.65}.training-note{margin:22px 0;padding:18px;border:1px solid #31433e;background:#eaff6505}.training-note b{font:11px 'IBM Plex Mono',monospace;color:#eaff65}.training-note p{margin:8px 0 0;line-height:1.6;color:#aebebf;font-size:14px}.step-intro a{color:#eaff65}
 @media(min-width:951px){.hero-copy{max-width:850px;width:min(70vw,850px)}.hero h1{font-size:clamp(76px,6.3vw,106px)}}
+
+
+/* BLACKLINE: an operator-authored attack workbench inside Evaluate and an optional model retest. */
+.attack-workbench,.probe-panel{border:1px solid rgba(128,225,211,.35);background:linear-gradient(135deg,rgba(12,32,39,.92),rgba(11,17,25,.97));padding:20px 22px;margin:22px 0;border-radius:6px}
+.attack-workbench h3{font-size:1.35rem;line-height:1.2;margin:8px 0}
+.attack-workbench p,.probe-panel p{line-height:1.55;margin:9px 0 14px}
+.attack-workbench label{display:block;letter-spacing:.09em;font-size:.73rem;color:#b2d8d5;margin:18px 0 8px;font-weight:700}
+#attack-payload{width:100%;min-height:145px;resize:vertical;box-sizing:border-box;border:1px solid #497272;background:#091119;color:#ebf6f2;font:500 .95rem/1.5 ui-monospace,SFMono-Regular,Consolas,monospace;padding:13px 14px;outline-offset:3px;border-radius:4px}
+#attack-payload:focus{outline:2px solid #90e8dd}
+.workbench-actions{display:flex;gap:15px;align-items:center;flex-wrap:wrap;margin:12px 0}
+.workbench-actions .text-button,.probe-panel .text-button{border:1px solid #659e99;padding:10px 12px;text-align:left}
+.workbench-audit,.workbench-note{font-size:.86rem;color:#b4d3d0}
+.attack-workbench small,.probe-panel small{display:block;font-size:.8rem;line-height:1.5;opacity:.85}
+.operator-payload{white-space:pre-wrap;overflow-wrap:anywhere;background:#07131a;padding:14px;font-family:ui-monospace,SFMono-Regular,Consolas,monospace}
+.probe-panel{background:rgba(21,42,54,.9);margin-top:18px;padding:16px}
+.probe-result{padding:14px;border-left:3px solid #8fd8c3;background:rgba(3,12,18,.72);margin-top:14px;overflow-wrap:anywhere}
+.probe-result p{margin:8px 0}
+@media(max-width:620px){.attack-workbench,.probe-panel{padding:14px;margin:16px 0}.workbench-actions{display:grid;gap:9px}.workbench-actions .text-button{width:100%}}

@@ -117,7 +117,7 @@ export function mountAuthPanel(mount){
   const login=make('button','Login','auth-login');login.type='button';login.setAttribute('aria-haspopup','dialog');login.setAttribute('aria-controls','auth-dialog');
   const status=make('p','Checking your arena session…','auth-status');status.id='auth-status';status.setAttribute('role','status');status.setAttribute('aria-live','polite');
   const account=make('div',undefined,'auth-account');account.hidden=true;const identity=make('p'),logout=make('button','Sign out','auth-signout');logout.type='button';logout.addEventListener('click',()=>arenaAuth.logout());account.append(identity,logout);
-  const note=make('p','BLACKLINE runs a fictional simulation in your browser. No live AI model is called during play.','auth-note');
+  const note=make('p','BLACKLINE scores fictional scenarios locally. An optional, clearly labeled OpenAI probe can run separately if the host connects it.','auth-note');
   mount.replaceChildren(heading,login,account,status,note);
 
   const dialog=make('dialog',undefined,'auth-dialog');dialog.id='auth-dialog';dialog.setAttribute('aria-labelledby','auth-dialog-title');dialog.setAttribute('aria-describedby','auth-dialog-description');

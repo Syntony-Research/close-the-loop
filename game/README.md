@@ -4,7 +4,7 @@
 
 BLACKLINE is a browser game about AI security, governance, and assurance. Nine original operators can play either of two ten-level campaigns. Levels unlock through demonstrated mission objectives; findings, controls, decisions, and system consequences form a downloadable evidence record.
 
-The characters and scenarios are fictional. The game engine simulates outcomes locally. It does not evaluate a real model, invoke a model API, execute financial transactions, or operate government systems.
+The characters and scenarios are fictional. The game engine simulates outcomes locally. The scored missions do not evaluate a real model, execute financial transactions, or operate government systems. An optional, separately configured OpenAI probe can return a fictional agent response; it executes no tools and cannot change scores or unlock levels. It is unavailable unless the host explicitly enables the separate backend capability.
 
 ## From the simulation to a real system
 
@@ -27,6 +27,8 @@ node game/preview.mjs
 ```
 
 Open [http://127.0.0.1:4189](http://127.0.0.1:4189). The preview binds only to the local machine and serves `game/dist/`. Localhost and `127.0.0.1` explicitly support unsigned simulation practice. Stop the preview with Ctrl+C.
+
+Authored payload drafts and optional probe evidence remain in the current tab, scoped to their campaign. Export before reloading or signing in; exports keep the latest 200 entries per campaign.
 
 The browser saves game progress in local storage. Saves are validated before rendering; an invalid campaign save is discarded while valid progress in the other campaign is preserved. Scores and gates are local simulation data, not authoritative competition results. Use the game's evidence export to keep a separate copy; clearing site data removes local progress. Authentication tokens, when used by a hosted deployment, belong in tab-scoped session storage and must not be included in evidence exports.
 
@@ -66,7 +68,7 @@ The [MIT license](../LICENSE) covers the code identified by it. Syntony names, l
 
 ## Production sign-in
 
-The hosted Syntony game requires an actual session from a connected Microsoft, Google, or GitHub provider. Copying the source does not copy those provider registrations, credentials, sessions, or permissions. A static host such as GitHub Pages cannot keep client secrets or run the OAuth backend.
+The hosted Syntony game requires an actual session from a connected Microsoft, Google, or GitHub provider. Copying the source does not copy those provider registrations, credentials, sessions, or permissions. A static host such as GitHub Pages cannot keep client secrets or run the OAuth backend or optional model probe.
 
 For a public fork, deploy your own authentication backend following the [service setup](../service/README.md), including durable authentication storage and its migrations. You do **not** need to configure model adapters or model API keys to run BLACKLINE. Keep hosted model inference disabled unless you separately intend to operate the retained Agent Arena service.
 
