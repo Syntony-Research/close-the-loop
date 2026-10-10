@@ -94,19 +94,16 @@
 @media(min-width:951px){.hero-copy{max-width:850px;width:min(70vw,850px)}.hero h1{font-size:clamp(76px,6.3vw,106px)}}
 
 
-/* BLACKLINE: an operator-authored attack workbench inside Evaluate and an optional model retest. */
-.attack-workbench,.probe-panel{border:1px solid rgba(128,225,211,.35);background:linear-gradient(135deg,rgba(12,32,39,.92),rgba(11,17,25,.97));padding:20px 22px;margin:22px 0;border-radius:6px}
+/* BLACKLINE: operator-authored payloads in a fully simulated mission. */
+.attack-workbench{border:1px solid rgba(128,225,211,.35);background:linear-gradient(135deg,rgba(12,32,39,.92),rgba(11,17,25,.97));padding:20px 22px;margin:22px 0;border-radius:6px}
 .attack-workbench h3{font-size:1.35rem;line-height:1.2;margin:8px 0}
-.attack-workbench p,.probe-panel p{line-height:1.55;margin:9px 0 14px}
+.attack-workbench p{line-height:1.55;margin:9px 0 14px}
 .attack-workbench label{display:block;letter-spacing:.09em;font-size:.73rem;color:#b2d8d5;margin:18px 0 8px;font-weight:700}
 #attack-payload{width:100%;min-height:145px;resize:vertical;box-sizing:border-box;border:1px solid #497272;background:#091119;color:#ebf6f2;font:500 .95rem/1.5 ui-monospace,SFMono-Regular,Consolas,monospace;padding:13px 14px;outline-offset:3px;border-radius:4px}
 #attack-payload:focus{outline:2px solid #90e8dd}
 .workbench-actions{display:flex;gap:15px;align-items:center;flex-wrap:wrap;margin:12px 0}
-.workbench-actions .text-button,.probe-panel .text-button{border:1px solid #659e99;padding:10px 12px;text-align:left}
+.workbench-actions .text-button{border:1px solid #659e99;padding:10px 12px;text-align:left}
 .workbench-audit,.workbench-note{font-size:.86rem;color:#b4d3d0}
-.attack-workbench small,.probe-panel small{display:block;font-size:.8rem;line-height:1.5;opacity:.85}
+.attack-workbench small{display:block;font-size:.8rem;line-height:1.5;opacity:.85}
 .operator-payload{white-space:pre-wrap;overflow-wrap:anywhere;background:#07131a;padding:14px;font-family:ui-monospace,SFMono-Regular,Consolas,monospace}
-.probe-panel{background:rgba(21,42,54,.9);margin-top:18px;padding:16px}
-.probe-result{padding:14px;border-left:3px solid #8fd8c3;background:rgba(3,12,18,.72);margin-top:14px;overflow-wrap:anywhere}
-.probe-result p{margin:8px 0}
-@media(max-width:620px){.attack-workbench,.probe-panel{padding:14px;margin:16px 0}.workbench-actions{display:grid;gap:9px}.workbench-actions .text-button{width:100%}}
+@media(max-width:620px){.attack-workbench{padding:14px;margin:16px 0}.workbench-actions{display:grid;gap:9px}.workbench-actions .text-button{width:100%}}
