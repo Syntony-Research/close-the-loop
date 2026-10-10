@@ -79,7 +79,7 @@ GitHub Pages hosts static assets; it does not run this API or keep provider secr
 
 The public experience supports GitHub, Microsoft, and Google sign-in when configured. A short-lived arena session identifies the participant; it does not make a model result an attested security finding. The server authenticates hosted requests and applies service limits. The browser saves an in-progress campaign before an OAuth round trip and rebuilds it through trusted replay afterward.
 
-Provider registrations are operator-managed. Only connected sign-in providers are shown to participants. Keep application secrets out of `site/`, GitHub Pages, public workflows, and exported evidence.
+Provider registrations are operator-managed. The Login dialog shows all three providers; only connected providers are enabled. Keep application secrets out of `site/`, GitHub Pages, public workflows, and exported evidence.
 
 ## Evidence that travels with the finding
 

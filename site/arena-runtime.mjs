@@ -1,6 +1,6 @@
 // Hosted transport only. Model credentials and prompt construction stay on the server.
-import {ARENA_API_URL} from './arena-config.mjs?v=20261009-3';
-import {arenaAuth} from './arena-auth.mjs?v=20261009-3';
+import {ARENA_API_URL} from './arena-config.mjs?v=20261010-1';
+import {arenaAuth} from './arena-auth.mjs?v=20261010-1';
 
 export const TARGETS = Object.freeze([
   Object.freeze({id:'openai',label:'OpenAI'}),

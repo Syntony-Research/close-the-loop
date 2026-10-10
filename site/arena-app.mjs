@@ -1,7 +1,7 @@
-import {CAMPAIGNS,createWorld,validateProposal,applyRound,makeArenaPack,validateArenaPack,MAX_ATTACK_LENGTH} from './arena-world.mjs?v=20261009-3';
-import {HostedAgent,TARGETS} from './arena-runtime.mjs?v=20261009-3';
-import {createSignal} from './signal.mjs?v=20261009-3';
-import {arenaAuth,mountAuthPanel} from './arena-auth.mjs?v=20261009-3';
+import {CAMPAIGNS,createWorld,validateProposal,applyRound,makeArenaPack,validateArenaPack,MAX_ATTACK_LENGTH} from './arena-world.mjs?v=20261010-1';
+import {HostedAgent,TARGETS} from './arena-runtime.mjs?v=20261010-1';
+import {createSignal} from './signal.mjs?v=20261010-1';
+import {arenaAuth,mountAuthPanel} from './arena-auth.mjs?v=20261010-1';
 
 const $=id=>document.getElementById(id);
 const text=(id,value)=>{if($(id))$(id).textContent=value;};
