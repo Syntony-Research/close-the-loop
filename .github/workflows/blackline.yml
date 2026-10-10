@@ -1,0 +1,31 @@
+name: Test BLACKLINE game
+on:
+  pull_request:
+    paths:
+      - 'game/**'
+      - '.github/workflows/blackline.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'game/**'
+      - '.github/workflows/blackline.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  game-engine:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check out game source
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Use Node.js 24
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '24'
+      - name: Verify local preview syntax
+        run: node --check game/preview.mjs
+      - name: Test mission rules and progression
+        run: node --test game/engine.test.mjs

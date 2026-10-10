@@ -5,11 +5,23 @@
 <p align="center">
   <a href="https://www.syntonyresearch.ai/challenge/">Play the challenge</a> ·
   <a href="https://github.com/Syntony-Research/close-the-loop/fork">Fork and adapt</a> ·
-  <a href="#run-it-locally">Run locally</a> ·
+  <a href="game/README.md#run-locally">Run BLACKLINE locally</a> ·
   <a href="#bring-your-own-system">For your organization</a>
 </p>
 
-Test an agent’s handling of untrusted input, apply a control, and replay the consequences across three rounds. The customer operations and research workflows use synthetic data and deterministic state transitions.
+## BLACKLINE: the Close the Loop game
+
+BLACKLINE turns AI red teaming into a playable, self-contained simulation. Choose one of nine original AI security operators and work through business and government campaigns with ten gated levels each. Find a failure, choose a control, replay the outcome, and carry the consequences into the next mission.
+
+- [Play BLACKLINE](https://www.syntonyresearch.ai/challenge/).
+- [Fork the source](https://github.com/Syntony-Research/close-the-loop/fork) and follow the [game setup and fork guide](game/README.md).
+- Serve `game/dist/` locally with the included Node preview server. Local practice needs no sign-in, packages, model API account, or API key.
+- The production game uses the host's available Microsoft, Google, and GitHub sign-in connections. Gameplay remains a browser simulation; character choices do not invoke live models.
+- Game engine tests run separately in the [BLACKLINE workflow](.github/workflows/blackline.yml). Existing toolkit tests, evidence schemas, and replay workflows remain available below.
+
+## Retained Agent Arena toolkit
+
+The original Agent Arena remains in `site/`, `src/`, `service/`, and the evidence tooling. It tests an agent's handling of untrusted input, applies a control, and replays consequences across three rounds. Its optional hosted model adapters are separate from BLACKLINE and are not required to run the game.
 
 **Evaluate → Govern → Assure → Repeat.**
 
@@ -34,7 +46,7 @@ The catalog supports optional **OpenAI, Microsoft Phi, Meta Llama, Anthropic Cla
 
 The Google adapter supports [`gemini-3.8-flash`](https://ai.google.dev/gemini-api/docs/models/gemini-3.8-flash). It requires an operator-provided Google API key; the model appears available only when the hosted service reports a configured connection.
 
-## Run it locally
+## Run the retained toolkit locally
 
 Use Node.js 24 LTS and Python 3. Tests and deterministic replay need no package installation, model credentials, or provider calls.
 
