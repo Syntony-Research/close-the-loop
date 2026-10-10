@@ -1,1 +1,1 @@
-{"name":"blackline-close-the-loop","private":true,"type":"module","scripts":{"test":"node --test engine.test.mjs","start":"node preview.mjs"}}
+{"name":"blackline-close-the-loop","private":true,"type":"module","scripts":{"test":"node --test *.test.mjs","start":"node preview.mjs"}}

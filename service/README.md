@@ -4,6 +4,12 @@ This Worker receives bounded synthetic challenge data, reconstructs the world wi
 
 Hosted inference requires a signed-in GitHub, Microsoft, or Google account. Provider options remain **Not connected** until their real registration, secrets, and durable authentication tables are configured. A displayed model is available only after the host has configured and verified it. Source code, evidence formats, and replay tools remain public; sign-in is not a security certification or an attestation of model provenance.
 
+## BLACKLINE authentication-only deployment
+
+BLACKLINE is a local simulation. Its deployed service is used for provider sign-in only. Leave both `ARENA_INFERENCE_ENABLED=false` and `ARENA_LIVE_ENABLED=false`. Missing inference configuration also fails closed: `/api/run` returns HTTP 410 without accessing authentication, quota storage, or any model, and public config exposes no model targets.
+
+Only a separately authorized legacy hosted experiment should opt into `ARENA_INFERENCE_ENABLED=true`, `ARENA_LIVE_ENABLED=true`, verified provider configuration, and spending quotas. The new capability flag is deliberately independent of older live-model settings.
+
 ## Build and verify
 
 Use Node 22.13 or newer (Node 24 recommended). No package installation is needed. Tests use synthetic credentials, local SQLite, and mocked HTTP; they do not load environment files or contact model or identity providers.
@@ -14,7 +20,7 @@ node scripts/build.mjs
 node scripts/validate-artifact.mjs
 ```
 
-Edit `worker/service.mjs`, `worker/auth.mjs`, and `worker/world.mjs`. `scripts/build.mjs` combines them into `worker/index.js` and `dist/server/index.js`. The portable wrapper `bash scripts/build.sh` runs the same build. An optional `.openai/hosting.json` is copied only if you create one for your own deployment; no Syntony hosting manifest or project identifier is included. Other Worker hosts can use the generated `worker/index.js` directly. See `wrangler.jsonc.example` for a Cloudflare deployment template and replace its database placeholder with your own D1 database. `dist/server/index.js` exports the Worker `fetch` handler. Do not place environment files, provider secrets, or session-signing keys in `dist/` or a public repository.
+Edit `worker/service.mjs`, `worker/auth.mjs`, and `worker/world.mjs`. `scripts/build.mjs` combines them into `worker/index.js` and `dist/server/index.js`. The hosting build step `bash scripts/build.sh` copies the already generated Worker and `.openai/hosting.json`; regenerate first after every source edit. `dist/server/index.js` exports the Worker `fetch` handler. Do not place environment files, provider secrets, or session-signing keys in `dist/` or a public repository.
 
 ## Authentication deployment
 
@@ -68,14 +74,13 @@ Persist only synthetic proposal evidence across the sign-in navigation and resto
 
 Durable inference limits are **12 requests per signed-in account per hour** and **60 requests shared per day**. A parallel comparison consumes one request for each selected target. Account quota keys are derived from the verified identity, not browser headers or submitted user IDs. Reservations happen before provider work, so failed provider calls can still consume a trial request. Authentication starts separately allow **20 per edge IP per hour** and **1000 shared per day**, with a keyed hash in storage rather than the IP address. The deployment must supply the trusted edge-injected `CF-Connecting-IP`; arbitrary platform/user identity headers are not accepted as a substitute. Expired auth and quota rows receive bounded cleanup on login or inference.
 
-Use `ARENA_LIVE_ENABLED=true` only after durable limits and credentials are ready. Configure the selected model below and set its `*_VERIFIED=true` flag only after a successful operator check. Leave every other connection disabled. Model selection stays explicit in the browser. Unconfigured targets are not silently substituted, and a rejected provider response cannot advance a round.
+Use `ARENA_LIVE_ENABLED=true` only after durable limits and credentials are ready. For each supported model, configure its server-only credentials, model/deployment name and permitted endpoint as described by `targetDefinitions` in `worker/service.mjs`; set its `*_VERIFIED=true` flag only after a successful operator check. Model selection stays explicit in the browser. Unconfigured targets are not silently substituted, and a rejected provider response cannot advance a round.
 
 `ARENA_LOCAL_TEST=true` bypasses durable inference and auth-start rate reservations **only when the request hostname is loopback**. It does not bypass sign-in, relax replay validation, make a target verified, or enable hosted-origin requests without durable limits. Never publish local environment files. The service uses fixed or allowlisted provider destinations, forbids redirect following, bounds provider responses and returns sanitized failure messages.
 
-
 ### Optional model connections
 
-The seven targets are configuration options. This fork contains no connected model accounts or keys.
+The nine targets are configuration options. This fork contains no connected model accounts or keys.
 
 | Target | Required server configuration | Permitted transport |
 | --- | --- | --- |
@@ -85,10 +90,12 @@ The seven targets are configuration options. This fork contains no connected mod
 | Anthropic Claude | `CLAUDE_API_KEY`, `CLAUDE_MODEL`, `CLAUDE_ENDPOINT`, then `CLAUDE_VERIFIED=true` | Foundry Anthropic Messages at `https://<resource>.services.ai.azure.com/anthropic/v1/messages`. |
 | Mistral | `MISTRAL_API_KEY`, `MISTRAL_MODEL`, `MISTRAL_ENDPOINT`, then `MISTRAL_VERIFIED=true` | Foundry Chat Completions; JSON object output mode. |
 | Qwen | `QWEN_API_KEY`, `QWEN_MODEL`, `QWEN_ENDPOINT`, then `QWEN_VERIFIED=true` | Foundry Chat Completions. |
-| Google Gemini Flash | `GEMINI_API_KEY`, then `GEMINI_VERIFIED=true` after an actual provider check | Native Google `generateContent` with model `gemini-3.8-flash`, low thinking, JSON schema and a 400-token total output cap. |
+| xAI Grok | `GROK_API_KEY`, `GROK_MODEL`, `GROK_ENDPOINT`, then `GROK_VERIFIED=true` after an actual check | Foundry Chat Completions; operator-selected deployment. |
+| DeepSeek | `DEEPSEEK_API_KEY`, `DEEPSEEK_MODEL`, `DEEPSEEK_ENDPOINT`, then `DEEPSEEK_VERIFIED=true` after an actual check | Foundry Chat Completions; operator-selected deployment. |
+| Google Gemini Flash | `GEMINI_API_KEY`, then `GEMINI_VERIFIED=true` after an actual provider check | Native Google `generateContent` with model `gemini-3.6-flash`, minimal thinking, JSON schema and a 1,024-token total output cap shared by reasoning and the final proposal. |
 
-Foundry Chat Completions URLs must be `https://<resource>.services.ai.azure.com/openai/v1/chat/completions` or `https://<resource>.openai.azure.com/openai/v1/chat/completions`. User info, custom ports, query strings and fragments are rejected. Deployment names must match the configured provider deployment. Registering an identity provider does not grant access to a model deployment.
+Foundry Chat Completions URLs must be `https://<resource>.services.ai.azure.com/openai/v1/chat/completions` or `https://<resource>.openai.azure.com/openai/v1/chat/completions`. User info, custom ports, query strings and fragments are rejected. Deployment names must match the configured provider deployment. Grok and DeepSeek have no default deployment or credentials. Check both campaigns against the actual deployment before enabling its verification flag; reasoning or incomplete output does not count as a valid proposal. All chat requests have a 400-token output cap. Registering an identity provider does not grant access to a model deployment.
 
-Gemini uses the fixed `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent` endpoint. `GEMINI_MODEL` and `GEMINI_ENDPOINT` can be omitted; if supplied, they must exactly match those bundled values. Arbitrary models and destinations are rejected. No Google model key is included or assumed available. If you select Gemini, verify a real request and only then set `GEMINI_VERIFIED=true`; missing keys are reported as **Google Gemini API key is not connected.** Truncated, blocked, thought-only or malformed output remains a failed request and never advances the campaign.
+Gemini uses the fixed `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent` endpoint. `GEMINI_MODEL` and `GEMINI_ENDPOINT` can be omitted; if supplied, they must exactly match those bundled values. Arbitrary models and destinations are rejected. The selected stable model is explicitly `gemini-3.6-flash` with minimal reasoning; there is no automatic model substitution or fallback. No Google model key is included or assumed available. If you select Gemini, verify a real request and only then set `GEMINI_VERIFIED=true`; missing keys are reported as **Google Gemini API key is not connected.** Gemini receives 1,024 output tokens because its reasoning and final proposal share that budget; other adapters remain capped at 400 output tokens. Every adapter retains the 45-second timeout. Truncated, blocked, thought-only or malformed output remains a failed request and never advances the campaign.
 
-An optional `<TARGET>_UNAVAILABLE_REASON` string may explain an unconnected model to participants. It is public configuration, limited to 200 characters: never put account details, endpoints containing credentials, secrets or internal diagnostics in it.
+An optional `<TARGET>_UNAVAILABLE_REASON` string may explain an unconnected or configured-but-unverified model to participants. It is public configuration, limited to 200 characters: never put account details, endpoints containing credentials, secrets or internal diagnostics in it.

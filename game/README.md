@@ -28,12 +28,12 @@ node game/preview.mjs
 
 Open [http://127.0.0.1:4189](http://127.0.0.1:4189). The preview binds only to the local machine and serves `game/dist/`. Localhost and `127.0.0.1` explicitly support unsigned simulation practice. Stop the preview with Ctrl+C.
 
-The browser saves game progress in local storage. Use the game's evidence export to keep a separate copy; clearing site data removes local progress. Authentication tokens, when used by a hosted deployment, belong in tab-scoped session storage and must not be included in evidence exports.
+The browser saves game progress in local storage. Saves are validated before rendering; an invalid campaign save is discarded while valid progress in the other campaign is preserved. Scores and gates are local simulation data, not authoritative competition results. Use the game's evidence export to keep a separate copy; clearing site data removes local progress. Authentication tokens, when used by a hosted deployment, belong in tab-scoped session storage and must not be included in evidence exports.
 
 Run the game tests from the repository root:
 
 ```sh
-node --test game/engine.test.mjs
+node --test game/*.test.mjs
 ```
 
 The existing Agent Arena toolkit has its own tests and replay commands in the [repository README](../README.md). BLACKLINE evidence is a game record; do not assume the older arena submission schema accepts it.
@@ -50,7 +50,8 @@ The existing Agent Arena toolkit has its own tests and replay commands in the [r
 | `dist/assets/` | Static game artwork and supporting assets |
 | `dist/auth.mjs` | Hosted sign-in client, when included in the release |
 | `dist/auth-config.mjs` | The deployment's public authentication service address |
-| `engine.test.mjs` | Game engine regression tests |
+| `engine.test.mjs`, `saved-state.test.mjs` | Game engine and saved-progress regression tests |
+| `dist/saved-state.mjs` | Bounded validation and recovery of browser saves |
 | `preview.mjs` | Dependency-free local HTTP preview |
 
 ## Fork and adapt
@@ -91,6 +92,6 @@ https://YOUR-BACKEND.example/auth/callback/github
 
 Microsoft and Google use `openid profile`. GitHub uses `read:user`; the game does not need repository access to authenticate participants. The provider sends the result to the backend, which returns a short-lived, one-use exchange code to your fixed frontend. The browser must preserve its tab-scoped sign-in proof through this redirect, consume the returned `#auth_code` through `/auth/exchange`, and validate the resulting session.
 
-Point the game authentication configuration at your own service. Keep client secrets, signing keys, provider tokens, and environment files out of browser JavaScript, HTML, local storage, public workflows, and exported evidence. Do not borrow Syntony's deployed backend for a fork. Only show a provider as available when your backend reports it configured, and verify each enabled provider through a real sign-in round trip before releasing your deployment.
+Point the game authentication configuration at your own service. Also replace the authentication origin in the `connect-src` Content Security Policy in `dist/index.html`; the policy intentionally permits only the configured backend and same-origin requests. Keep client secrets, signing keys, provider tokens, and environment files out of browser JavaScript, HTML, local storage, public workflows, and exported evidence. Do not borrow Syntony's deployed backend for a fork. Only show a provider as available when your backend reports it configured, and verify each enabled provider through a real sign-in round trip before releasing your deployment.
 
 Sign-in identifies a hosted participant. It does not make the public code private, turn game scores into a security certification, or prevent a fork from running its own local simulation.

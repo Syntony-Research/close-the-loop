@@ -2,7 +2,7 @@ import {AuthError, authAuthenticate, authProviders, authHandleRequest} from './a
 import {CAMPAIGNS, MAX_ATTACK_LENGTH, createWorld, applyRound, buildAgentMessages, validateProposal} from './world.mjs';
 
 const MAX_BODY_BYTES=32768, MAX_PROVIDER_BYTES=65536;
-const GEMINI_FLASH_MODEL='gemini-3.8-flash';
+const GEMINI_FLASH_MODEL='gemini-3.6-flash';
 const GEMINI_FLASH_ENDPOINT=`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_FLASH_MODEL}:generateContent`;
 const serverObject=x=>x!==null&&typeof x==='object'&&!Array.isArray(x);
 const serverExact=(x,keys)=>serverObject(x)&&Object.keys(x).length===keys.length&&keys.every(k=>Object.hasOwn(x,k));
@@ -10,10 +10,13 @@ export class ArenaError extends Error {constructor(status,code,message){super(me
 const fail=(status,code,message)=>{throw new ArenaError(status,code,message);};
 const value=(env,key)=>typeof env[key]==='string'?env[key].trim():'';
 const enabled=(env,key)=>value(env,key)==='true';
+// BLACKLINE uses this service for identity only. Legacy model routes require a
+// separate, deliberate host opt-in; an old live flag or retained key is not enough.
+const inferenceEnabled=env=>env.ARENA_INFERENCE_ENABLED==='true';
 
 export function reconstructRun(input){
   if(!serverExact(input,['campaignId','rounds','attackText','targetId']))fail(400,'invalid_request','Send only campaignId, rounds, attackText and targetId.');
-  if(!CAMPAIGNS.some(c=>c.id===input.campaignId)||!['openai','phi','llama','claude','mistral','qwen','gemini'].includes(input.targetId))fail(400,'unknown_target','Unknown campaign or model target.');
+  if(!CAMPAIGNS.some(c=>c.id===input.campaignId)||!['openai','phi','llama','claude','mistral','qwen','grok','deepseek','gemini'].includes(input.targetId))fail(400,'unknown_target','Unknown campaign or model target.');
   if(!Array.isArray(input.rounds)||input.rounds.length>2)fail(400,'invalid_rounds','A live request requires zero, one or two completed rounds.');
   if(typeof input.attackText!=='string'||input.attackText.length>MAX_ATTACK_LENGTH)fail(400,'invalid_attack',`Limit the untrusted message to ${MAX_ATTACK_LENGTH} characters.`);
   let world=createWorld(input.campaignId);
@@ -38,7 +41,7 @@ function azureEndpoint(raw,path='/openai/v1/chat/completions'){
 
 export function targetDefinitions(env){
   const targets=[{id:'openai',label:'OpenAI',provider:'OpenAI Responses',model:value(env,'OPENAI_MODEL')||'gpt-5.6-terra',endpoint:'https://api.openai.com/v1/responses',key:value(env,'OPENAI_API_KEY'),verified:enabled(env,'OPENAI_VERIFIED')}];
-  for(const [id,label] of [['phi','Microsoft Phi'],['llama','Meta Llama'],['claude','Anthropic Claude'],['mistral','Mistral'],['qwen','Qwen']]){
+  for(const [id,label] of [['phi','Microsoft Phi'],['llama','Meta Llama'],['claude','Anthropic Claude'],['mistral','Mistral'],['qwen','Qwen'],['grok','xAI Grok'],['deepseek','DeepSeek']]){
     const prefix=id.toUpperCase();
     targets.push({id,label,provider:id==='claude'?'Microsoft Foundry Anthropic Messages':'Microsoft Foundry Chat Completions',model:value(env,`${prefix}_MODEL`),endpoint:azureEndpoint(value(env,`${prefix}_ENDPOINT`),id==='claude'?'/anthropic/v1/messages':'/openai/v1/chat/completions'),key:value(env,`${prefix}_API_KEY`),verified:enabled(env,`${prefix}_VERIFIED`)});
   }
@@ -50,10 +53,12 @@ export function targetDefinitions(env){
 }
 
 function publicTargets(env,quotaReady){
+  if(!inferenceEnabled(env))return [];
   return targetDefinitions(env).map(t=>{
     const configured=!!(t.key&&t.endpoint&&t.model);
     const available=configured&&t.verified&&enabled(env,'ARENA_LIVE_ENABLED')&&quotaReady;
-    const reason=!configured?(value(env,`${t.id.toUpperCase()}_UNAVAILABLE_REASON`).slice(0,200)||(t.id==='gemini'&&!t.key?'Google Gemini API key is not connected.':'Hosted endpoint is not connected.')):!t.verified?'Hosted target awaits a successful operator verification.':!enabled(env,'ARENA_LIVE_ENABLED')?'Live inference is paused by the host.':!quotaReady?'Durable request limits are not ready.':'Available for hosted inference. Synthetic data only.';
+    const unavailableReason=value(env,`${t.id.toUpperCase()}_UNAVAILABLE_REASON`).slice(0,200);
+    const reason=!configured?(unavailableReason||(t.id==='gemini'&&!t.key?'Google Gemini API key is not connected.':'Hosted endpoint is not connected.')):!t.verified?(unavailableReason||'Hosted target awaits a successful operator verification.'):!enabled(env,'ARENA_LIVE_ENABLED')?'Live inference is paused by the host.':!quotaReady?'Durable request limits are not ready.':'Available for hosted inference. Synthetic data only.';
     return {id:t.id,label:t.label,provider:t.provider,model:t.model,configured,available,reason};
   });
 }
@@ -133,12 +138,14 @@ export async function requestModel(target,messages,schema,signal,fetchImpl=(...a
     }:target.id==='gemini'?{
       systemInstruction:{parts:messages.filter(m=>m.role==='system').map(m=>({text:m.content}))},
       contents:messages.filter(m=>m.role!=='system').map(m=>({role:m.role==='assistant'?'model':'user',parts:[{text:m.content}]})),
-      generationConfig:{maxOutputTokens:400,candidateCount:1,thinkingConfig:{thinkingLevel:'low',includeThoughts:false},responseFormat:{text:{mimeType:'application/json',schema}}},
+      // REST TextResponseFormat uses a protobuf enum, unlike legacy responseMimeType.
+      generationConfig:{maxOutputTokens:1024,thinkingConfig:{thinkingLevel:'minimal',includeThoughts:false},responseFormat:{text:{mimeType:'APPLICATION_JSON',schema}}},
     }:{model:target.model,messages,max_tokens:400,temperature:0,...(['phi','mistral'].includes(target.id)?{response_format:{type:'json_object'}}:{})};
     const headers=target.id==='claude'?{'x-api-key':target.key,'anthropic-version':'2023-06-01','Content-Type':'application/json'}:target.id==='gemini'?{'x-goog-api-key':target.key,'Content-Type':'application/json'}:{'Authorization':`Bearer ${target.key}`,'Content-Type':'application/json'};
     const response=await fetchImpl(target.endpoint,{method:'POST',headers,body:JSON.stringify(body),signal:controller.signal,redirect:'manual'});
     if(response.status>=300&&response.status<400)fail(502,'provider_redirect','The model endpoint redirected unexpectedly. No action was applied.');
     const raw=await boundedText(response,MAX_PROVIDER_BYTES,controller.signal);
+    if(response.status===402)fail(503,'provider_credit','This provider has no available inference credits. Choose another connected model.');
     let data;try{data=JSON.parse(raw);}catch{fail(502,'provider_response','The model provider returned an unreadable response. No action was applied.');}
     if(!response.ok){
       const code=data?.error?.code;
@@ -195,12 +202,16 @@ export default {
     try{
       origin=corsOrigin(request,env);
       const path=new URL(request.url).pathname.replace(/\/$/,'');
+      if(path==='/api/run'&&!inferenceEnabled(env))return response({error:{code:'inference_disabled',message:'Hosted model inference is disabled. BLACKLINE runs as a local simulation.'}},410,origin);
       if(request.method==='OPTIONS'&&['/api/config','/api/run','/auth/session','/auth/exchange','/auth/logout'].includes(path))return new Response(null,{status:204,headers:response({},200,origin).headers});
       if(path.startsWith('/auth/')){
         const authResult=await authHandleRequest(request,env);
         if(authResult){const headers=new Headers(authResult.headers);for(const [key,value] of response({},200,origin).headers)if(key.toLowerCase().startsWith('access-control-')||key.toLowerCase()==='vary')headers.set(key,value);return new Response(authResult.body,{status:authResult.status,headers});}
       }
-      if(path==='/api/config'&&request.method==='GET')return response({auth:{required:true,providers:await authProviders(env)},targets:publicTargets(env,await quotaReady(request,env)),limits:{maxAttackLength:MAX_ATTACK_LENGTH,maxRounds:3,requestsPerVisitorHour:12,sharedRequestsPerDay:60},notice:'Synthetic trial. Inference is hosted; replay does not authenticate model provenance.'},200,origin);
+      if(path==='/api/config'&&request.method==='GET'){
+        const inference=inferenceEnabled(env);
+        return response({auth:{required:true,providers:await authProviders(env)},inference:{enabled:inference},targets:inference?publicTargets(env,await quotaReady(request,env)):[],limits:inference?{maxAttackLength:MAX_ATTACK_LENGTH,maxRounds:3,requestsPerVisitorHour:12,sharedRequestsPerDay:60}:null,notice:inference?'Synthetic trial. Inference is hosted; replay does not authenticate model provenance.':'Identity service for BLACKLINE. Gameplay is a local simulation; hosted model inference is disabled.'},200,origin);
+      }
       if(path==='/api/run'&&request.method==='POST'){
         if((request.headers.get('Content-Type')||'').split(';')[0].trim().toLowerCase()!=='application/json')fail(415,'content_type','Use application/json.');
         if(Number(request.headers.get('Content-Length'))>MAX_BODY_BYTES)fail(413,'body_too_large','The request exceeds 32 KiB.');
@@ -217,7 +228,7 @@ export default {
         if(!parsed.valid)fail(422,'invalid_proposal','The model response did not match the permitted proposal format. No action was applied.');
         return response({...result,text:JSON.stringify(parsed.proposal),model:target.model,provider:target.provider,modelDisplayLabel:target.label,runId:crypto.randomUUID()},200,origin);
       }
-      if(path===''&&request.method==='GET')return response({service:'Syntony Agent Arena',version:'1.0.0',endpoints:['/api/config','/api/run'],data:'Synthetic challenge inputs only.'},200,origin);
+      if(path===''&&request.method==='GET')return response({service:'Syntony challenge identity service',version:'1.0.1',endpoints:['/api/config','/auth/session',...(inferenceEnabled(env)?['/api/run']:[])],data:inferenceEnabled(env)?'Synthetic challenge inputs only.':'BLACKLINE gameplay is a local simulation. Hosted model inference is disabled.'},200,origin);
       return response({error:{code:'not_found',message:'Endpoint not found.'}},404,origin);
     }catch(error){
       const known=error instanceof ArenaError||error instanceof AuthError;

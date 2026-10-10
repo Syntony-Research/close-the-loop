@@ -90,6 +90,18 @@ test('state is bound to the callback browser and provider and can only be consum
   assert.equal(calls.length,2);
 });
 
+test('a rate-limited address cannot drain the shared daily sign-in allowance',async()=>{
+  const env=environment(),path='/auth/login/microsoft?challenge='+'c'.repeat(43);
+  for(let i=0;i<20;i++)assert.equal((await service.fetch(request(path),env)).status,302);
+  for(let i=0;i<50;i++)assert.equal((await service.fetch(request(path),env)).status,429);
+  const global=()=>env.DB.raw.prepare("SELECT count FROM arena_quota WHERE window_key LIKE 'auth-global:%'").get().count;
+  assert.equal(global(),20);
+  const other=request(path,{headers:{'CF-Connecting-IP':'192.0.2.11'}});
+  assert.equal((await service.fetch(other,env)).status,302);
+  assert.equal(global(),21);
+  assert.equal(env.DB.raw.prepare('SELECT count(*) AS n FROM arena_oauth_states').get().n,21);
+});
+
 test('Microsoft callback checks issuer/signature and returns only a proof-bound opaque exchange; logout revokes bearer',async t=>{
   const env=environment(),flow=await start(env),calls=await identityMock(t,flow);
   const response=await service.fetch(callback(flow),env);

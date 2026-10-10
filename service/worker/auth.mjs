@@ -72,9 +72,13 @@ async function authReserveStart(request,env){
   if(!edgeIP||edgeIP.length>64||!/^[a-fA-F0-9:.]+$/.test(edgeIP))authFail(503,'auth_identity_unavailable','Sign-in is temporarily unavailable.');
   const identity=authBase64(await crypto.subtle.sign('HMAC',await authKey(env),authEncoder.encode(edgeIP))),now=new Date(),expiry=authNow()+172800;
   const sql='INSERT INTO arena_quota (window_key, count, expires_at) VALUES (?, 1, ?) ON CONFLICT(window_key) DO UPDATE SET count = count + 1 WHERE count < ? RETURNING count';
+  const visitorKey='auth-visitor:'+identity+':'+now.toISOString().slice(0,13);
+  // D1 batch is atomic. An already-exhausted visitor must not consume the shared
+  // daily allowance: test its existing count before reserving the global slot.
+  const globalSql='INSERT INTO arena_quota (window_key, count, expires_at) SELECT ?, 1, ? WHERE COALESCE((SELECT count FROM arena_quota WHERE window_key = ?), 0) < ? ON CONFLICT(window_key) DO UPDATE SET count = count + 1 WHERE count < ? RETURNING count';
   const result=await env.DB.batch([
-    env.DB.prepare(sql).bind('auth-global:'+now.toISOString().slice(0,10),expiry,1000),
-    env.DB.prepare(sql).bind('auth-visitor:'+identity+':'+now.toISOString().slice(0,13),expiry,20),
+    env.DB.prepare(globalSql).bind('auth-global:'+now.toISOString().slice(0,10),expiry,visitorKey,20,1000),
+    env.DB.prepare(sql).bind(visitorKey,expiry,20),
   ]);
   if(result.some(row=>!row.results?.length))authFail(429,'sign_in_limit','Too many sign-in attempts. Try again later.');
 }

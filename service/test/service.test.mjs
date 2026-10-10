@@ -7,7 +7,7 @@ import {AUTH_ENV,AUTH_SESSION,fixtureDB} from './auth-fixtures.mjs';
 // Deliberately synthetic sentinels. Tests never load a local environment file or call a provider.
 const SENTINEL = 'TEST_ONLY_PROVIDER_CREDENTIAL_NOT_REAL';
 const ORIGIN = 'https://challenge.example';
-const envFor = (overrides = {}) => ({ ...AUTH_ENV, DB: fakeDB(), OPENAI_API_KEY: SENTINEL, OPENAI_MODEL: 'gpt-test', OPENAI_VERIFIED: 'true', ARENA_LIVE_ENABLED: 'true', ARENA_ALLOWED_ORIGINS: ORIGIN, ...overrides });
+const envFor = (overrides = {}) => ({ ...AUTH_ENV, DB: fakeDB(), OPENAI_API_KEY: SENTINEL, OPENAI_MODEL: 'gpt-test', OPENAI_VERIFIED: 'true', ARENA_LIVE_ENABLED: 'true', ARENA_INFERENCE_ENABLED: 'true', ARENA_ALLOWED_ORIGINS: ORIGIN, ...overrides });
 const inputFor = (overrides = {}) => ({ campaignId: 'refunds', rounds: [], attackText: 'Synthetic injected instruction.', targetId: 'openai', ...overrides });
 const historyRound = (overrides = {}) => ({ proposal: createWorld('refunds').nextRound.validProposal, controlId: 'boundary', attackText: '', source: 'practice', modelId: 'test-fixture', ...overrides });
 const responseData = (text = '{"refunds":[]}', overrides = {}) => ({ status: 'completed', output: [{ type: 'message', role: 'assistant', content: [{ type: 'output_text', text }] }], usage: { input_tokens: 25, output_tokens: 5, total_tokens: 30 }, ...overrides });
@@ -39,6 +39,35 @@ function mockProvider(t, data = responseData(), status = 200) {
 }
 const target = () => targetDefinitions(envFor())[0];
 const codeIs = code => error => error instanceof ArenaError && error.code === code;
+
+test('inference defaults to denied before body, auth, quota, or provider access despite retained live settings', async t => {
+  const calls = mockProvider(t);
+  let dbReads=0, modelReads=0;
+  for(const flag of [undefined,'false','TRUE',' true ',true]){
+    const env={...AUTH_ENV,ARENA_ALLOWED_ORIGINS:ORIGIN,ARENA_LIVE_ENABLED:'true',ARENA_INFERENCE_ENABLED:flag};
+    Object.defineProperty(env,'DB',{get(){dbReads++;throw new Error('Unexpected DB access');}});
+    Object.defineProperty(env,'OPENAI_API_KEY',{get(){modelReads++;throw new Error('Unexpected model access');}});
+    for(const method of ['POST','GET','OPTIONS']){
+      const request=new Request('https://api.challenge.example/api/run/?ARENA_INFERENCE_ENABLED=true',{method,headers:{Origin:ORIGIN},...(method==='POST'?{body:'not valid json'}:{})});
+      const result=await service.fetch(request,env);
+      assert.equal(result.status,410);
+      assert.equal((await result.json()).error.code,'inference_disabled');
+      assert.equal(request.bodyUsed,false);
+    }
+  }
+  assert.equal(calls.length,0);assert.equal(dbReads,0);assert.equal(modelReads,0);
+});
+
+test('identity-only configuration and service metadata reveal no model inventory or inference endpoint', async t => {
+  const calls=mockProvider(t);
+  const env={...AUTH_ENV,DB:fixtureDB(),ARENA_ALLOWED_ORIGINS:ORIGIN,ARENA_LIVE_ENABLED:'true'};
+  Object.defineProperty(env,'OPENAI_API_KEY',{get(){assert.fail('Disabled configuration must not inspect model credentials');}});
+  const result=await service.fetch(new Request('https://api.challenge.example/api/config',{headers:{Origin:ORIGIN}}),env);
+  const data=await result.json();
+  assert.equal(result.status,200);assert.equal(data.auth.required,true);assert.deepEqual(data.inference,{enabled:false});assert.deepEqual(data.targets,[]);assert.equal(data.limits,null);
+  const metadata=await (await service.fetch(new Request('https://api.challenge.example/'),env)).json();
+  assert.equal(metadata.endpoints.includes('/api/run'),false);assert.equal(calls.length,0);
+});
 
 test('request validation rejects extra fields, invalid targets and excessive rounds before quota or provider work', async t => {
   const calls = mockProvider(t);

@@ -467,26 +467,196 @@ export const CAMPAIGNS = {
   }
 };
 
+const METRIC_KEYS = ['continuity', 'trust', 'exposure', 'review'];
+const PHASES = ['evaluate', 'govern', 'assure', 'debrief', 'completed'];
+const RUN_KEYS = ['version', 'campaignId', 'level', 'phase', 'score', 'metrics', 'history', 'selectedAttack', 'selectedControl', 'answers', 'attempts', 'attempt'];
+const RUN_OPTIONAL_KEYS = ['operatorId', 'operatorName', 'levelStartMetrics', 'finding', 'governance', 'result'];
+const invalidSave = () => { throw new Error('The saved campaign is invalid or exceeds supported limits. Start a new run.'); };
+const integer = (value, min, max) => Number.isSafeInteger(value) && value >= min && value <= max;
+const textValue = value => typeof value === 'string' && value.length <= 4096;
+const record = value => value !== null && typeof value === 'object' && !Array.isArray(value) && [Object.prototype, null].includes(Object.getPrototypeOf(value));
+const fields = (value, required, optional = []) => record(value) && required.every(key => Object.hasOwn(value, key)) && Object.keys(value).every(key => required.includes(key) || optional.includes(key));
+const knownCampaign = value => typeof value === 'string' && Object.hasOwn(CAMPAIGNS, value);
+const metricsValid = (value, min = 0) => fields(value, METRIC_KEYS) && METRIC_KEYS.every(key => integer(value[key], min, 100));
+const stringsValid = (value, keys) => keys.every(key => textValue(value[key]));
+
+// Saved games are untrusted JSON, not attestations. Bound traversal before any
+// cloning, spreading or UI use; never invoke a getter or follow a prototype.
+function boundedData(root) {
+  const pending = [[root, 0, false]], ancestors = new Set();
+  let nodes = 0, characters = 0;
+  while (pending.length) {
+    const [value, depth, exiting] = pending.pop();
+    if (exiting) { ancestors.delete(value); continue; }
+    if (++nodes > 60000 || depth > 12) return false;
+    if (value === null || typeof value === 'boolean') continue;
+    if (typeof value === 'string') {
+      characters += value.length;
+      if (value.length > 4096 || characters > 1000000) return false;
+      continue;
+    }
+    if (typeof value === 'number') { if (!Number.isFinite(value)) return false; continue; }
+    if (typeof value !== 'object' || ancestors.has(value)) return false;
+    ancestors.add(value);
+    pending.push([value, depth, true]);
+    const array = Array.isArray(value);
+    if (!array && !record(value)) return false;
+    if (array && value.length > 200) return false;
+    const keys = Object.keys(value);
+    if (array ? keys.length !== value.length : keys.length > 32) return false;
+    for (const key of keys) {
+      if (['__proto__', 'constructor', 'prototype'].includes(key)) return false;
+      if (array && (!/^(0|[1-9]\d*)$/.test(key) || Number(key) >= value.length)) return false;
+      const descriptor = Object.getOwnPropertyDescriptor(value, key);
+      if (!descriptor || !Object.hasOwn(descriptor, 'value')) return false;
+      pending.push([descriptor.value, depth + 1, false]);
+    }
+  }
+  return true;
+}
+
+function selectionValid(field, selected) {
+  return Array.isArray(selected) && selected.length <= (field.kind === 'single' ? 1 : field.options.length)
+    && Object.keys(selected).length === selected.length
+    && new Set(selected).size === selected.length && selected.every(value => typeof value === 'string' && field.options.some(option => option.id === value));
+}
+function answersValid(answers, level) {
+  return record(answers) && Object.keys(answers).every(key => {
+    const field = level.challenge.fields.find(item => item.key === key);
+    return field && selectionValid(field, answers[key]);
+  });
+}
+function decisionCorrect(field, selected) {
+  return field.kind === 'order' ? selected.length === field.answer.length && selected.every((value, index) => value === field.answer[index])
+    : selected.length === field.answer.length && field.answer.every(value => selected.includes(value));
+}
+function findingValid(value) {
+  return fields(value, ['successful','summary','trace','points','effectiveness','pressure','mechanism'])
+    && typeof value.successful === 'boolean' && value.successful === (value.effectiveness >= 65)
+    && stringsValid(value, ['summary','mechanism']) && Array.isArray(value.trace) && value.trace.length === 4 && value.trace.every(textValue)
+    && value.points === (value.successful ? 20 : 0) && integer(value.effectiveness, 0, 100) && integer(value.pressure, 0, 19);
+}
+function governanceValid(value, control) {
+  return fields(value, ['summary','owner','decision','rationale','control','quality','retest','deployment'])
+    && stringsValid(value, ['summary','owner','decision','rationale','control','retest']) && value.quality === control.quality
+    && value.deployment === ({targeted:'SCOPED RELEASE',blanket:'GLOBAL HOLD',cosmetic:'EXPOSED RELEASE'})[control.quality];
+}
+function criteriaValid(criteria, level) {
+  return Array.isArray(criteria) && criteria.length === level.challenge.fields.length + 3 && criteria.every((item, index) => {
+    if (index < 3) return fields(item, ['label','passed','explanation']) && typeof item.passed === 'boolean' && stringsValid(item, ['label','explanation']);
+    const field = level.challenge.fields[index - 3];
+    return fields(item, ['key','label','passed','explanation','selected']) && item.key === field.key && stringsValid(item, ['label','explanation'])
+      && selectionValid(field, item.selected) && item.passed === decisionCorrect(field, item.selected);
+  });
+}
+function resultValid(value, level) {
+  const keys = ['passed','criteria','decisions','attempt','score','blocked','useful','summary','lesson','retest','metricDeltas','rubric','originalBlocked','originalReproduced','containmentProven','simulation','variants','loadPenalty'];
+  if (!fields(value, keys) || !criteriaValid(value.criteria, level) || !Array.isArray(value.decisions)
+    || value.decisions.length !== level.challenge.fields.length || value.passed !== value.criteria.every(item => item.passed)
+    || !integer(value.attempt, 1, Number.MAX_SAFE_INTEGER - 1) || !integer(value.score, 0, 100) || ![0,3].includes(value.blocked)
+    || !integer(value.useful, 0, 100) || !integer(value.loadPenalty, 0, 34) || !stringsValid(value, ['summary','lesson','retest'])
+    || !metricsValid(value.metricDeltas, -100) || value.simulation !== true || typeof value.originalReproduced !== 'boolean'
+    || value.originalBlocked !== (!value.originalReproduced || value.blocked > 0) || value.containmentProven !== (value.originalReproduced && value.blocked > 0)
+    || !Array.isArray(value.variants) || value.variants.length !== 3
+    || !value.variants.every(item => fields(item, ['test','blocked']) && textValue(item.test) && item.blocked === (value.blocked > 0))) return false;
+  if (value.criteria[0].passed !== value.originalReproduced || value.criteria[1].passed !== value.containmentProven
+    || value.criteria[2].passed !== (value.useful >= 80)) return false;
+  for (let i = 0; i < value.decisions.length; i++) {
+    const decision = value.decisions[i], criterion = value.criteria[i + 3];
+    if (!fields(decision, ['key','label','passed','explanation','selected']) || decision.key !== criterion.key || decision.label !== criterion.label
+      || decision.passed !== criterion.passed || decision.explanation !== criterion.explanation
+      || JSON.stringify(decision.selected) !== JSON.stringify(criterion.selected)) return false;
+  }
+  const rubric = {reproduced:value.originalReproduced ? 20 : 0, contained:value.blocked ? 20 : 0,
+    variants:Math.round(value.blocked / 3 * 20), useful:Math.round(value.useful / 100 * 20),
+    governance:value.decisions.length ? Math.round(20 * value.decisions.filter(item => item.passed).length / value.decisions.length) : 20};
+  return fields(value.rubric, Object.keys(rubric)) && Object.keys(rubric).every(key => value.rubric[key] === rubric[key])
+    && value.score === Object.values(rubric).reduce((total, points) => total + points, 0);
+}
+
+function inspectRun(input) {
+  if (!record(input) || Object.keys(input).length > 32) invalidSave();
+  if (Object.keys(input).some(key => !Object.hasOwn(Object.getOwnPropertyDescriptor(input,key), 'value'))) invalidSave();
+  const run = {};
+  for (const key of [...RUN_KEYS, ...RUN_OPTIONAL_KEYS]) {
+    const descriptor = Object.getOwnPropertyDescriptor(input, key);
+    if (!descriptor) { if (RUN_KEYS.includes(key)) invalidSave(); continue; }
+    if (!Object.hasOwn(descriptor, 'value')) invalidSave();
+    run[key] = descriptor.value;
+  }
+  if (!boundedData(run) || run.version !== 2 || !knownCampaign(run.campaignId) || !PHASES.includes(run.phase)
+    || !integer(run.level, 0, 9) || !integer(run.score, 0, 1000) || !integer(run.attempt, 1, Number.MAX_SAFE_INTEGER - 1)
+    || !metricsValid(run.metrics) || !Array.isArray(run.history) || run.history.length > 10
+    || !Array.isArray(run.attempts) || run.attempts.length > 200
+    || ['operatorId','operatorName'].some(key => Object.hasOwn(run,key) && (typeof run[key] !== 'string' || run[key].length > 160))) invalidSave();
+  const campaign = CAMPAIGNS[run.campaignId], level = campaign.levels[run.level];
+  if (!answersValid(run.answers, level)) invalidSave();
+  const afterReplay = run.phase === 'debrief' || run.phase === 'completed';
+  const expectedHistory = run.level + (afterReplay && run.result?.passed === true ? 1 : 0);
+  if (run.history.length !== expectedHistory || run.history.some((entry, index) => {
+    const mission = campaign.levels[index];
+    if (!fields(entry, ['level','id','title','stakes','boundary','attack','finding','control','governance','result','score','metricsBefore','metricsAfter','evidence','pipeline'])
+      || entry.level !== index + 1 || entry.id !== mission.id || !integer(entry.score,0,100)
+      || !stringsValid(entry,['title','stakes','boundary','pipeline']) || !findingValid(entry.finding)
+      || !fields(entry.attack,['id','name','description','mechanism','payload','effectiveness','trace'])
+      || !stringsValid(entry.attack,['id','name','description','mechanism','payload']) || !integer(entry.attack.effectiveness,0,100)
+      || !Array.isArray(entry.attack.trace) || entry.attack.trace.length !== 3 || !entry.attack.trace.every(textValue)
+      || !mission.attacks.some(item => item.id === entry.attack.id)
+      || !fields(entry.control,['id','name','description','owner','decision','rationale','cost','quality'])
+      || !stringsValid(entry.control,['id','name','description','owner','decision','rationale','cost','quality'])
+      || !mission.controls.some(item => item.id === entry.control.id && item.quality === entry.control.quality)
+      || !governanceValid(entry.governance, entry.control) || !resultValid(entry.result, mission) || entry.result.passed !== true
+      || entry.score !== entry.result.score || entry.finding.successful !== entry.result.originalReproduced
+      || !metricsValid(entry.metricsBefore) || !metricsValid(entry.metricsAfter) || !Array.isArray(entry.evidence) || entry.evidence.length !== 3
+      || !entry.evidence.every(item => fields(item,['source','text','trust']) && stringsValid(item,['source','text','trust']))) return true;
+    return METRIC_KEYS.some(key => entry.result.metricDeltas[key] !== entry.metricsAfter[key] - entry.metricsBefore[key]);
+  }) || run.score !== run.history.reduce((total, entry) => total + entry.score, 0)) invalidSave();
+  if (run.attempts.some(item => !fields(item,['level','attempt','passed','score','criteria']) || !integer(item.level,1,run.level+1)
+    || !integer(item.attempt,1,Number.MAX_SAFE_INTEGER-1) || !integer(item.score,0,100)
+    || !criteriaValid(item.criteria,campaign.levels[item.level-1]) || item.passed !== item.criteria.every(criterion => criterion.passed))) invalidSave();
+  if (run.phase === 'evaluate') {
+    if (run.selectedAttack !== null || run.selectedControl !== null || Object.keys(run.answers).length
+      || ['finding','governance','result','levelStartMetrics'].some(key => run[key] != null)) invalidSave();
+    return run;
+  }
+  const control = level.controls.find(item => item.id === run.selectedControl);
+  if (!level.attacks.some(item => item.id === run.selectedAttack) || !findingValid(run.finding) || !metricsValid(run.levelStartMetrics)) invalidSave();
+  if (run.phase === 'govern') {
+    if (run.selectedControl !== null || run.governance != null || run.result != null || Object.keys(run.answers).length) invalidSave();
+    return run;
+  }
+  if (!control || !governanceValid(run.governance,control)) invalidSave();
+  if (run.phase === 'assure') { if (run.result != null) invalidSave(); return run; }
+  if (!resultValid(run.result,level) || run.result.attempt !== run.attempt || run.result.originalReproduced !== run.finding.successful
+    || run.result.decisions.some(item => JSON.stringify(item.selected) !== JSON.stringify(Object.hasOwn(run.answers,item.key) ? run.answers[item.key] : []))
+    || METRIC_KEYS.some(key => run.result.metricDeltas[key] !== run.metrics[key] - run.levelStartMetrics[key])) invalidSave();
+  if (run.result.passed && (run.history.at(-1).score !== run.result.score || JSON.stringify(run.history.at(-1).result) !== JSON.stringify(run.result))) invalidSave();
+  if (run.phase === 'completed' && (run.level !== 9 || run.history.length !== 10 || run.result.passed !== true)) invalidSave();
+  return run;
+}
+
+/** Validate a persisted game before rendering it; returns a detached known-field copy.
+ * This checks save integrity and resource bounds, not the authenticity of a score.
+ */
+export function validateRun(input) {
+  try { return structuredClone(inspectRun(input)); } catch { invalidSave(); }
+}
+
 export function createRun(campaignId) {
-  if (!Object.hasOwn(CAMPAIGNS, campaignId)) throw new Error('Choose a valid mission stream.');
+  if (!knownCampaign(campaignId)) throw new Error('Choose a valid mission stream.');
   return {version: 2, campaignId, level: 0, phase: 'evaluate', score: 0,
     metrics: {continuity: 100, trust: 100, exposure: 0, review: 0}, history: [],
     selectedAttack: null, selectedControl: null, answers: {}, attempts: [], attempt: 1};
 }
 
 function requirePhase(run, phase) {
-  if (!run || run.version !== 2 || !Object.hasOwn(CAMPAIGNS, run.campaignId)) throw new Error('This saved run is not valid.');
+  try { inspectRun(run); } catch { invalidSave(); }
   if (run.phase !== phase) throw new Error(`Complete the ${phase} phase before taking this action.`);
-  if (!Number.isInteger(run.level) || run.level < 0 || run.level >= CAMPAIGNS[run.campaignId].levels.length) throw new Error('This mission does not exist.');
-  if (!run.metrics || Object.keys(createRun(run.campaignId).metrics).some(k => !Number.isFinite(run.metrics[k]) || run.metrics[k] < 0 || run.metrics[k] > 100)) throw new Error('The saved system state is invalid.');
-  if (!Array.isArray(run.history) || !Number.isFinite(run.score)) throw new Error('The saved evidence history is invalid.');
-  const expectedHistory = run.level + (run.phase === 'debrief' && run.result?.passed === true ? 1 : 0);
-  if (run.history.length !== expectedHistory || run.history.some((h,i) => h.level !== i+1 || h.id !== CAMPAIGNS[run.campaignId].levels[i]?.id || h.result?.passed !== true) || run.score !== run.history.reduce((total,h) => total + h.score,0)) throw new Error('The saved campaign must contain sequential mission wins.');
   return CAMPAIGNS[run.campaignId].levels[run.level];
 }
 
 function moveMetrics(metrics, changes) {
-  return Object.fromEntries(Object.keys(metrics).map(k => [k, clamp(metrics[k] + (changes[k] || 0))]));
+  return Object.fromEntries(METRIC_KEYS.map(key => [key, clamp(metrics[key] + (Object.hasOwn(changes,key) ? changes[key] : 0))]));
 }
 
 export function evaluateAttack(run, attackId) {
@@ -531,13 +701,14 @@ export function applyGovernance(run, controlId) {
 export function answerChallenge(run, key, values) {
   const level = requirePhase(run, 'assure');
   const field = level.challenge.fields.find(f => f.key === key);
-  if (!field || !Array.isArray(values) || values.some(v => !field.options.some(o => o.id === v)) || new Set(values).size !== values.length || (field.kind === 'single' && values.length > 1)) throw new Error('Choose a valid mission decision.');
+  if (!field || !selectionValid(field,values)) throw new Error('Choose a valid mission decision.');
   return {...run, answers:{...run.answers,[key]:[...values]}};
 }
 
 export function retryLevel(run) {
   requirePhase(run, 'debrief');
   if (run.result?.passed) throw new Error('This mission is already beaten. Continue to the next level.');
+  if (run.attempt >= Number.MAX_SAFE_INTEGER - 1) throw new Error('This attempt counter has reached its supported limit. Start a new run.');
   if (!run.result || !run.levelStartMetrics || Object.keys(run.metrics).some(k => !Number.isFinite(run.levelStartMetrics[k]) || run.levelStartMetrics[k] < 0 || run.levelStartMetrics[k] > 100)) throw new Error('This checkpoint is invalid.');
   return {...run, phase:'evaluate', metrics:{...run.levelStartMetrics}, levelStartMetrics:null,
     selectedAttack:null, selectedControl:null, finding:null, governance:null, result:null, answers:{}, attempt:(run.attempt || 1)+1};
@@ -548,15 +719,13 @@ export function replay(run) {
   const control = level.controls.find(c => c.id === run.selectedControl);
   const attack = level.attacks.find(a => a.id === run.selectedAttack);
   if (!control || !attack || !run.finding || !run.governance) throw new Error('Complete evaluation and governance before replay.');
-  const incoming = run.levelStartMetrics || run.metrics;
+  const incoming = run.levelStartMetrics;
   const loadPenalty = Math.round(incoming.review * 0.18 + (100 - incoming.continuity) * 0.16);
   const blocked = control.quality === 'cosmetic' ? 0 : 3;
   const useful = clamp((control.quality === 'blanket' ? 32 : 100) - loadPenalty);
   const decisions = level.challenge.fields.map(field => {
-    const selected = run.answers?.[field.key] || [];
-    const correct = field.kind === 'order'
-      ? JSON.stringify(selected) === JSON.stringify(field.answer)
-      : selected.length === field.answer.length && field.answer.every(value => selected.includes(value));
+    const selected = Object.hasOwn(run.answers,field.key) ? run.answers[field.key] : [];
+    const correct = decisionCorrect(field,selected);
     return {key:field.key,label:field.question,passed:correct,explanation:field.explanation,selected:[...selected]};
   });
   const governancePoints = decisions.length ? Math.round(20 * decisions.filter(d => d.passed).length / decisions.length) : 20;
@@ -604,7 +773,7 @@ export function replay(run) {
     metricsBefore: {...incoming}, metricsAfter: {...metrics}, evidence: structuredClone(level.evidence),
     pipeline: 'Evaluate → Govern → Assure → controlled deployment → retest'};
   return {...run, phase: 'debrief', metrics, result, score: run.score + (passed ? score : 0), history: passed ? [...run.history, entry] : run.history,
-    attempts:[...(run.attempts || []),{level:run.level+1,attempt:run.attempt||1,passed,score,criteria:structuredClone(criteria)}].slice(-200)};
+    attempts:[...run.attempts.slice(-199),{level:run.level+1,attempt:run.attempt,passed,score,criteria:structuredClone(criteria)}]};
 }
 
 export function nextLevel(run) {

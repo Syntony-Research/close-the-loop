@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {CAMPAIGNS, createRun, evaluateAttack, applyGovernance, answerChallenge, replay, retryLevel, nextLevel} from './dist/engine.js';
+import {CAMPAIGNS, createRun, validateRun, evaluateAttack, applyGovernance, answerChallenge, replay, retryLevel, nextLevel} from './dist/engine.js';
 
 const current = run => CAMPAIGNS[run.campaignId].levels[run.level];
 const attackFor = (run, type = 'provenance') => current(run).attacks.find(a => a.id.endsWith('-' + type)).id;
@@ -326,4 +326,139 @@ test('correct attack and control placement varies across missions', () => {
     assert.equal(new Set(campaign.levels.map(l => l.attacks.findIndex(a => a.id.endsWith('-provenance')))).size,3);
     assert.equal(new Set(campaign.levels.map(l => l.controls.findIndex(c => c.quality === 'targeted'))).size,3);
   }
+});
+
+test('persisted-state validation accepts every real phase and returns a detached known-field clone', () => {
+  for (const campaign of ['atlas','prism']) {
+    let run = createRun(campaign);
+    for (let i = 0; i < 10; i++) {
+      run = validateRun(saved(run));
+      run = validateRun(evaluateAttack(run,attackFor(run)));
+      run = validateRun(applyGovernance(run,controlFor(run)));
+      for (const field of current(run).challenge.fields) run = validateRun(answerChallenge(run,field.key,expectedAnswer(field.key,i)));
+      run = validateRun(replay(run));
+      run = validateRun(nextLevel(run));
+    }
+    assert.equal(run.phase,'completed');
+  }
+  const original = {...createRun('atlas'),operatorId:'cipher',operatorName:'Cipher',unrecognized:{text:'discard this'}};
+  const clean = validateRun(original);
+  assert.equal(Object.hasOwn(clean,'unrecognized'),false);
+  assert.equal(clean.operatorId,'cipher');
+  assert.notEqual(clean,original);
+  assert.notEqual(clean.metrics,original.metrics);
+  clean.metrics.trust=0;
+  assert.equal(original.metrics.trust,100);
+});
+
+test('untrusted numeric display fields reject HTML, strings, fractions, and non-finite values', () => {
+  for (const [field,values] of [
+    ['level',['0','<img src=x onerror=alert(1)>',0.5,-1,10]],
+    ['score',['0','<svg onload=alert(1)>',NaN,Infinity,-1,1001]],
+    ['attempt',['1','<b>1</b>',0,0.5,Infinity,Number.MAX_SAFE_INTEGER]]
+  ]) for (const value of values) assert.throws(() => validateRun({...createRun('atlas'),[field]:value}));
+  for (const value of ['100','<img>',NaN,Infinity,100.5,-1,101]) {
+    const run=createRun('atlas');run.metrics.trust=value;
+    assert.throws(() => validateRun(run));
+    assert.throws(() => evaluateAttack(run,'l1-provenance'));
+  }
+  const complete=win(atLevel('atlas',9));
+  const invalid=saved(complete);invalid.history[0].score='<img src=x>';
+  assert.throws(() => validateRun(invalid));
+});
+
+test('campaign IDs and prototype-backed state must not be coerced or inherited', () => {
+  for (const id of [['atlas'],new String('atlas'),null,{},'constructor','toString','__proto__']) {
+    assert.throws(() => createRun(id));
+    assert.throws(() => validateRun({...createRun('atlas'),campaignId:id}));
+  }
+  assert.throws(() => validateRun(Object.create(createRun('atlas'))));
+  const inherited=createRun('atlas');inherited.metrics=Object.create(inherited.metrics);
+  assert.throws(() => validateRun(inherited));
+  const extra=createRun('atlas');extra.metrics=JSON.parse('{"continuity":100,"trust":100,"exposure":0,"review":0,"__proto__":{"polluted":true}}');
+  assert.throws(() => evaluateAttack(extra,'l1-provenance'));
+  assert.equal({}.polluted,undefined);
+  const constructorMetric=createRun('atlas');constructorMetric.metrics.constructor=1;
+  assert.throws(() => evaluateAttack(constructorMetric,'l1-provenance'));
+});
+
+test('malformed answer containers and sparse direct selections fail before replay', () => {
+  const run=toAssure(atLevel('atlas',2));
+  for (const answers of [null,[],{authority:'policy'},{authority:{length:1}},{authority:[null]},{authority:['policy','policy']},{unknown:[]}]) {
+    const damaged={...run,answers};
+    assert.throws(() => validateRun(damaged));
+    assert.throws(() => replay(damaged));
+  }
+  assert.throws(() => answerChallenge(run,'authority',new Array(1)));
+  const inherited={...run,answers:Object.create({authority:['policy']})};
+  assert.throws(() => replay(inherited));
+  const huge=new Array(1000000000);
+  assert.throws(() => answerChallenge(run,'authority',huge));
+});
+
+test('oversized or non-array attempt history is rejected before allocation and spreading', () => {
+  const run=toAssure(createRun('atlas'),'cosmetic');
+  for (const attempts of ['x'.repeat(10000),{length:200},new Array(1000000000),Array.from({length:201},()=>null)]) {
+    assert.throws(() => replay({...run,attempts}));
+    assert.throws(() => validateRun({...run,attempts}));
+  }
+  const failed=replay(run),oldAttempt=failed.attempts[0];
+  const retry=retryLevel(failed);
+  let ready=toAssure(retry,'cosmetic');
+  ready={...ready,attempt:201,attempts:Array.from({length:200},(_,i)=>({...structuredClone(oldAttempt),attempt:i+1}))};
+  const replayed=replay(ready);
+  assert.equal(replayed.attempts.length,200);
+  assert.equal(replayed.attempts[0].attempt,2);
+  assert.equal(replayed.attempts.at(-1).attempt,201);
+  assert.doesNotThrow(() => validateRun(replayed));
+});
+
+test('bounded persisted structures reject cycles, getters, excessive nesting, and oversized text', () => {
+  const run=toAssure(atLevel('atlas',2));
+  const cycle={...run};cycle.answers={authority:cycle};
+  assert.throws(() => validateRun(cycle));
+  let calls=0;
+  const getter={...run};Object.defineProperty(getter,'score',{enumerable:true,get(){calls++;return 200;}});
+  assert.throws(() => validateRun(getter));
+  assert.equal(calls,0);
+  const hiddenGetter={...run};Object.defineProperty(hiddenGetter,'extra',{enumerable:true,get(){calls++;return 'unused';}});
+  assert.throws(() => validateRun(hiddenGetter));
+  assert.equal(calls,0);
+  const large=saved(run);large.finding.summary='x'.repeat(4097);
+  assert.throws(() => validateRun(large));
+  const deep=saved(run);let nested={};deep.finding.summary=nested;
+  for(let i=0;i<20;i++){nested.next={};nested=nested.next;}
+  assert.throws(() => validateRun(deep));
+});
+
+test('result and history scores must match their bounded rubric and actual gate results', () => {
+  const finished=win(atLevel('prism',9));
+  for(const mutate of [
+    run=>{run.result.criteria[0].passed='true';},
+    run=>{run.result.criteria=null;},
+    run=>{run.result.decisions[0].selected='policy';},
+    run=>{run.result.variants[0].blocked='false';},
+    run=>{run.result.score=99;},
+    run=>{run.result.rubric.governance=19;},
+    run=>{run.history[0].score=99;run.score=999;},
+    run=>{run.history[0].score=-1;run.score=899;},
+    run=>{run.history[0].finding.successful='false';},
+    run=>{run.result.metricDeltas.review=1;},
+    run=>{run.phase='unknown';}
+  ]) {
+    const damaged=saved(finished);mutate(damaged);
+    assert.throws(() => validateRun(damaged));
+  }
+  assert.throws(() => validateRun({...createRun('atlas'),phase:'completed'}));
+});
+
+test('missing checkpoints cannot silently change replay usefulness or produce invalid retry state', () => {
+  const run=toAssure(createRun('atlas'));
+  for(const checkpoint of [null,{},[],{continuity:100,trust:100,exposure:0,review:'0'}]) {
+    assert.throws(() => replay({...run,levelStartMetrics:checkpoint}));
+  }
+  const failed=replay(toAssure(createRun('atlas'),'cosmetic'));
+  const maximum={...failed,attempt:Number.MAX_SAFE_INTEGER-1,result:{...failed.result,attempt:Number.MAX_SAFE_INTEGER-1}};
+  assert.doesNotThrow(() => validateRun(maximum));
+  assert.throws(() => retryLevel(maximum));
 });

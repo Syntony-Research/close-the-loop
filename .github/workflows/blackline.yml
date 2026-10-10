@@ -28,4 +28,4 @@ jobs:
       - name: Verify local preview syntax
         run: node --check game/preview.mjs
       - name: Test mission rules and progression
-        run: node --test game/engine.test.mjs
+        run: node --test game/*.test.mjs

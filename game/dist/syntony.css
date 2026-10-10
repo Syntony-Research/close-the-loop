@@ -90,3 +90,5 @@ footer .footer-links{display:flex;gap:20px;flex-wrap:wrap}
 footer .footer-links button{font:inherit;color:inherit;background:none;padding:0;letter-spacing:inherit}footer .footer-links button:hover{color:var(--yellow)}
 @media(max-width:680px){.campaign-map .practice-note{display:none}}
 @media(max-width:380px){.topbar nav #audio{display:none}}
+
+.save-recovery{margin:20px 4.8%;padding:16px 20px;border:1px solid #aa8240;background:#201d15;color:#efd7aa;font:13px/1.7 var(--body)}
