@@ -1,0 +1,35 @@
+name: Propose a synthetic world
+description: Connect an agent boundary to consequences, controls, and a decision.
+title: "[World] "
+body:
+  - type: markdown
+    attributes:
+      value: Use synthetic information only. Do not post credentials, client evidence, personal information, or real-system vulnerabilities.
+  - type: textarea
+    id: decision
+    attributes:
+      label: Workflow and decision
+      description: What may the agent do, and what decision would this exercise inform?
+    validations:
+      required: true
+  - type: textarea
+    id: dynamics
+    attributes:
+      label: Consequences over time
+      description: Describe state, feedback loops, delays, affected processes, and displaced burden.
+    validations:
+      required: true
+  - type: textarea
+    id: boundary
+    attributes:
+      label: Boundary and controls
+      description: What is trusted, what is untrusted, and which controls should be compared?
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Useful work and evidence
+      description: How would the exercise distinguish containment, useful work, and remaining uncertainty?
+    validations:
+      required: true

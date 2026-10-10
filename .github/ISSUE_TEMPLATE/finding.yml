@@ -1,0 +1,51 @@
+name: Synthetic challenge finding
+description: Record an authorized, synthetic challenge result.
+title: '[Challenge] '
+body:
+  - type: markdown
+    attributes:
+      value: 'Use synthetic challenge evidence only. Keep customer data, credentials, and real-system vulnerabilities out of public issues.'
+  - type: dropdown
+    id: mission
+    attributes:
+      label: Mission
+      options:
+        - Arena - The refund cascade
+        - Arena - The evidence echo
+        - Refund exception
+        - Citation provenance
+        - Vendor export
+        - Cumulative budget
+        - Human review backlog
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Reproduction and expected boundary
+      description: Link a pull request with the exported JSON under submissions/.
+    validations:
+      required: true
+  - type: dropdown
+    id: execution-mode
+    attributes:
+      label: Execution mode
+      description: Live mode is a participant claim; replay checks world consequences, not model provenance.
+      options:
+        - Deterministic practice
+        - Hosted model (participant-reported)
+    validations:
+      required: true
+  - type: textarea
+    id: systems
+    attributes:
+      label: System effects and affected people
+      description: What accumulates, what is delayed, and who absorbs any displaced burden?
+    validations:
+      required: true
+  - type: textarea
+    id: decision
+    attributes:
+      label: Owner, control, decision, and re-test trigger
+    validations:
+      required: true

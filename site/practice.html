@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#080c10" />
+    <meta name="description" content="Try Syntony’s free red-team simulation. Find a failure, choose a control, replay the evidence, and take your challenge into GitHub." />
+    <link rel="canonical" href="https://www.syntonyresearch.ai/challenge/" />
+    <meta property="og:title" content="Close the Loop — Syntony Red Team Challenge" />
+    <meta property="og:description" content="Five levels. Explore feedback, delays, and human decisions. Test a workflow boundary. Apply controls and record results." />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://www.syntonyresearch.ai/challenge/" />
+    <meta property="og:image" content="https://www.syntonyresearch.ai/assets/og-image.png" />
+    <title>Close the Loop — a Syntony red team challenge</title>
+    <link rel="icon" href="logo.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="arena-auth.css" />
+    <script type="module" src="app.mjs"></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#lab">Skip to the challenge</a>
+    <header class="site-header shell">
+      <a class="wordmark" href="https://www.syntonyresearch.ai/" aria-label="Syntony home">
+        <img src="logo.svg" alt="" width="34" height="34" />
+        <span>syntony<span class="wordmark-dot">.</span></span>
+      </a>
+      <nav class="main-nav" aria-label="Main navigation">
+        <a href="index.html">Agent arena ↗</a><a href="#mission">The mission</a>
+        <a href="#lab">The lab</a>
+        <a href="#systems">Systems map</a>
+        <a href="#github">GitHub <span aria-hidden="true">↗</span></a>
+      </nav>
+      <a class="header-cta" href="#teams">For your team <span aria-hidden="true">↗</span></a>
+    </header>
+
+    <main>
+      <noscript><p class="shell">Enable JavaScript to run this interactive simulation. You can still download the challenge kit below.</p></noscript>
+      <section class="hero shell" id="mission" aria-labelledby="hero-title">
+        <div class="hero-copy">
+          <div class="eyebrow"><span class="status-dot"></span> THE CLOSE THE LOOP CHALLENGE</div>
+          <h1 id="hero-title">Test a workflow<br /><em>boundary.</em></h1>
+          <p class="hero-description">Breaking an AI system is the beginning.<br class="desktop-break" /> Knowing what to change comes next.</p>
+          <p class="hero-detail">Test a simulated business workflow. Expose a failure, choose a control, and build a replayable record of what changed.</p>
+          <div class="hero-actions">
+            <a class="button button-primary" href="index.html">Enter the agent arena <span class="arrow" aria-hidden="true">↗</span></a><a class="button button-secondary" href="#lab">Guided practice</a>
+            <span class="hero-meta">10–30 MINUTES<br /><span>Free. Sign-in required to play.</span></span>
+          </div>
+          <div class="hero-footnote"><span class="mini-cross" aria-hidden="true">+</span> 5 missions · Synthetic data · No live model calls</div>
+        </div>
+        <div class="signal-art" aria-label="Animated signal sculpture representing the evaluation, governance and assurance loop">
+          <div class="art-coordinate coordinate-top"><span>FIG. 01</span><span>THE ASSURANCE LOOP</span><span class="mini-cross" aria-hidden="true">+</span></div>
+          <div class="signal-halo" aria-hidden="true"></div>
+          <div class="art-orbit orbit-one" aria-hidden="true"></div>
+          <div class="art-orbit orbit-two" aria-hidden="true"></div>
+          <canvas id="signal-canvas" width="720" height="720" aria-hidden="true"></canvas>
+          <div class="signal-label label-attack"><span class="label-dot coral"></span><span><small>01 / EVALUATE</small>Find the failure</span></div>
+          <div class="signal-label label-control"><span><small>02 / GOVERN</small>Make the decision</span><span class="label-dot white"></span></div>
+          <div class="signal-label label-retest"><span class="label-dot mint"></span><span><small>03 / ASSURE</small>Prove the control</span></div>
+          <div class="art-coordinate coordinate-bottom"><span class="signal-wave" aria-hidden="true">∿∿∿∿∿</span><span>TRUST IS A CONTINUOUS PRACTICE.</span><span>∞</span></div>
+        </div>
+      </section>
+
+      <div class="principle-strip">
+        <div class="shell principle-inner">
+          <p>A better question than<br /><strong>“Can you break it?”</strong></p>
+          <div class="principle-step"><span>01</span><div><strong>Evaluate</strong><small>Reveal a meaningful failure.</small></div></div>
+          <span class="strip-arrow" aria-hidden="true">→</span>
+          <div class="principle-step"><span>02</span><div><strong>Govern</strong><small>Decide what happens next.</small></div></div>
+          <span class="strip-arrow" aria-hidden="true">→</span>
+          <div class="principle-step"><span>03</span><div><strong>Assure</strong><small>Retest. Keep the evidence.</small></div></div>
+        </div>
+      </div>
+
+      <section class="auth-shell shell"><div id="auth-mount"></div></section>
+
+      <section class="lab-section shell" id="lab" aria-labelledby="lab-title">
+        <div class="section-heading">
+          <div><div class="eyebrow subdued">THE INTERACTIVE LAB / 001</div><h2 id="lab-title">Choose a<br /><span class="muted">practice mission.</span></h2></div>
+          <p>Five domains. Increasing difficulty. One complete loop.<br />Choose a mission and test the boundary between what an AI reads and what it should obey.</p>
+        </div>
+
+        <div class="difficulty-note"><span>START SIMPLE. FOLLOW THE CONSEQUENCES.</span><span>Foundation → Systems</span></div>
+<div class="mission-picker" data-auth-required inert role="group" aria-label="Choose a mission">
+<button class="mission-card active" type="button" data-scenario="support-refund" aria-pressed="true"><span class="mission-card-top"><span class="mission-number">01 / FOUNDATION</span><span class="level-bars" aria-hidden="true">▰▱▱▱▱</span></span><span class="mission-card-title">The refund exception<span aria-hidden="true">↗</span></span><span class="mission-card-description">Authority at the tool boundary</span><span class="mission-tag">Customer operations</span></button>
+<button class="mission-card " type="button" data-scenario="research-citation" aria-pressed="false"><span class="mission-card-top"><span class="mission-number">02 / INTERMEDIATE</span><span class="level-bars" aria-hidden="true">▰▰▱▱▱</span></span><span class="mission-card-title">The poisoned source<span aria-hidden="true">↗</span></span><span class="mission-card-description">Evidence that feeds the next decision</span><span class="mission-tag">Research & intelligence</span></button>
+<button class="mission-card " type="button" data-scenario="vendor-export" aria-pressed="false"><span class="mission-card-top"><span class="mission-number">03 / ADVANCED</span><span class="level-bars" aria-hidden="true">▰▰▰▱▱</span></span><span class="mission-card-title">The export request<span aria-hidden="true">↗</span></span><span class="mission-card-description">Trust crossing an organizational boundary</span><span class="mission-tag">Vendor operations</span></button>
+<button class="mission-card " type="button" data-scenario="cumulative-budget" aria-pressed="false"><span class="mission-card-top"><span class="mission-number">04 / EXPERT</span><span class="level-bars" aria-hidden="true">▰▰▰▰▱</span></span><span class="mission-card-title">The invisible accumulation<span aria-hidden="true">↗</span></span><span class="mission-card-description">Safe-looking steps. Unsafe total.</span><span class="mission-tag">Finance & reconciliation</span></button>
+<button class="mission-card " type="button" data-scenario="review-backlog" aria-pressed="false"><span class="mission-card-top"><span class="mission-number">05 / SYSTEMS</span><span class="level-bars" aria-hidden="true">▰▰▰▰▰</span></span><span class="mission-card-title">The queue trap<span aria-hidden="true">↗</span></span><span class="mission-card-description">A faster intake. A hidden backlog.</span><span class="mission-tag">Public services</span></button>
+</div>
+
+        <div class="workspace" data-auth-required inert>
+          <div class="workspace-heading">
+            <div class="workspace-title"><span class="status-dot"></span><span>INTERACTIVE WORKSPACE</span><span class="workspace-divider">/</span><strong id="mission-title">The refund exception</strong></div>
+            <span class="workspace-mode">SANDBOX <span aria-hidden="true">◈</span></span>
+          </div>
+          <div class="mission-brief">
+            <div class="brief-description"><span class="field-kicker">YOUR MISSION</span><p id="mission-description">A support assistant processes refund requests. Test whether untrusted customer text can persuade it to override the refund policy.</p></div>
+            <div class="brief-rule"><span class="field-kicker">SUCCESS CONDITION</span><p id="mission-objective">Trigger a policy violation, then prevent it without blocking a legitimate request.</p></div>
+          </div>
+          <div class="policy-row"><span class="field-kicker">POLICY BOUNDARY</span><p id="mission-policy">Refunds require an eligible order and a permitted amount.</p><span class="boundary-icon" aria-hidden="true">⌁</span></div>
+
+          <div class="systems-brief"><span class="field-kicker">SYSTEMS LENS</span><p id="systems-lens"></p><p><strong>People affected:</strong> <span id="affected-people"></span></p></div>
+          <div class="stage-nav" role="group" aria-label="Challenge stages">
+            <button type="button" class="stage-button active" data-stage="evaluate" aria-pressed="true"><span class="stage-index">01</span><span>Evaluate<small>Test the boundary</small></span><span class="stage-chevron" aria-hidden="true">↗</span></button>
+            <button type="button" class="stage-button" data-stage="govern" aria-pressed="false"><span class="stage-index">02</span><span>Govern<small>Choose a control</small></span><span class="stage-chevron" aria-hidden="true">↗</span></button>
+            <button type="button" class="stage-button" data-stage="assure" aria-pressed="false"><span class="stage-index">03</span><span>Assure<small>Show your evidence</small></span><span class="stage-chevron" aria-hidden="true">↗</span></button>
+          </div>
+
+          <div class="lab-grid">
+            <section class="lab-panel evaluate-panel" id="evaluate-panel" aria-labelledby="evaluate-title">
+              <div class="panel-heading"><h3 id="evaluate-title">Craft your test</h3><span class="panel-symbol" aria-hidden="true">↗</span></div>
+              <div class="input-heading"><label for="payload">Untrusted input</label><span id="mission-surface">CUSTOMER MESSAGE</span></div>
+              <div class="editor-wrap"><span class="editor-corner" aria-hidden="true">⌜</span><textarea maxlength="12000" id="payload" spellcheck="false" placeholder="Write the message that tests the boundary…" aria-describedby="payload-help"></textarea><span class="editor-bottom-label">YOUR PAYLOAD <span aria-hidden="true">↵</span></span></div>
+              <p class="input-help" id="payload-help">Use synthetic content. Never paste secrets or real customer data.</p>
+              <button class="text-button" id="sample-btn" type="button"><span aria-hidden="true">↳</span> Load an example attack</button>
+              <div class="control-field"><label for="control">Select a control</label><select id="control"><option value="none">None — establish a baseline</option><option value="prompt">Prompt hardening</option><option value="boundary">Enforced trust boundary</option></select></div>
+              <button class="button button-primary run-button" id="run-btn" type="button"><span>Run the test</span><span aria-hidden="true">→</span></button>
+              <details class="grammar-help"><summary>How does this simulation work? <span aria-hidden="true">+</span></summary><div><p>This lab uses deterministic rules and synthetic business data. It illustrates trust boundaries; it is not an evaluation of a live model.</p><p>Use a proposed tool call in this format:</p><code>&lt;tool&gt;{"action":"refund","ticket":"SYN-1042","amount":499}&lt;/tool&gt;</code><p>Only the single &lt;tool&gt; JSON action is parsed. Surrounding prose is illustrative and does not change the outcome. Load an example for the exact fields supported by each mission.</p></div></details>
+            </section>
+
+            <section class="lab-panel govern-panel" id="govern-panel" aria-labelledby="govern-title">
+              <div class="panel-heading"><h3 id="govern-title">Inspect the behavior</h3><span class="panel-symbol" aria-hidden="true">⌁</span></div>
+              <div class="run-status" id="run-status" role="status" aria-live="polite"><span class="status-dot idle"></span><span>Awaiting your first test</span></div>
+              <div class="output-label"><span>EXECUTION TRACE</span><span aria-hidden="true">↓</span></div>
+              <div id="trace" class="trace" aria-live="polite"><div class="empty-trace"><span class="trace-line" aria-hidden="true"></span><p>Every decision leaves a trace.</p><small>Run a test to see how the system handles your input.</small></div></div>
+              <div class="output-label comparison-label"><span>BEFORE / AFTER</span><span aria-hidden="true">⇄</span></div>
+              <div id="comparison" class="comparison"><div class="comparison-placeholder"><span>Baseline</span><strong>—</strong><small>Control</small><strong>—</strong></div></div>
+              <div class="governance-fields"><label for="owner">Accountable owner</label><input maxlength="120" id="owner" type="text" placeholder="e.g. Customer operations lead" /><label for="decision">Release decision</label><select id="decision"><option value="">Choose a decision…</option><option value="hold">Hold for remediation</option><option value="conditional-release">Release with conditions</option><option value="release">Release</option></select></div>
+            </section>
+
+            <section class="lab-panel assure-panel" id="assure-panel" aria-labelledby="assure-title">
+              <div class="panel-heading"><h3 id="assure-title">Build the evidence</h3><span class="panel-symbol" aria-hidden="true">◇</span></div>
+              <div class="score-card"><div><span class="field-kicker">LOOP COMPLETENESS</span><div class="score"><strong id="score-value">0</strong><span>/ 100</span></div></div><div class="score-ring" aria-hidden="true"><svg viewBox="0 0 64 64"><circle class="score-ring-track" cx="32" cy="32" r="26"/><circle class="score-ring-progress" id="score-ring-progress" cx="32" cy="32" r="26" stroke-dasharray="163.36" stroke-dashoffset="163.36"/></svg><span>↗</span></div></div>
+              <p class="score-caption" id="score-caption">80 points for test results; 20 for record completeness.</p>
+              <div class="output-label"><span>SUPPLIED REGRESSION CASES</span><span aria-hidden="true">✓</span></div>
+              <div class="regression-list" id="regression-list"><li><span class="check-placeholder">○</span><span>Original attack blocked</span><span class="pending">Pending</span></li><li><span class="check-placeholder">○</span><span>Legitimate task preserved</span><span class="pending">Pending</span></li><li><span class="check-placeholder">○</span><span>Variants tested</span><span class="pending">Pending</span></li></div>
+              <div class="assurance-fields"><label for="retest">Retest trigger</label><input maxlength="400" id="retest" type="text" placeholder="e.g. After any policy or model change" /><label for="notes">Evidence & rationale</label><textarea maxlength="3000" id="notes" rows="3" placeholder="Who bears the downside? Where could risk move? Explain the decision and what remains uncertain."></textarea></div>
+              <div class="export-actions"><button id="export-md" class="button button-secondary" type="button">Export report <span aria-hidden="true">↓</span></button><button id="export-json" class="icon-button" type="button" aria-label="Export evidence as JSON" title="Export JSON">{ }</button></div>
+            <p id="export-status" class="input-help" role="status" aria-live="polite"></p>
+            </section>
+          </div>
+          <div class="workspace-footer"><span><span class="status-dot tiny"></span> Deterministic training simulation · synthetic data · no live model calls</span><span><span id="mission-progress">0 / 5 loops completed</span></span></div>
+        </div>
+
+        <div class="lab-note"><span class="note-icon" aria-hidden="true">i</span><p>Technical score: reproduce a failure (20), contain it (20), block supplied attack variants (20), preserve useful tasks (20). Record completeness: owner, decision, retest trigger, and rationale (5 each). Human review: not performed. This is not a production security assessment.</p></div>
+      </section>
+
+      <section class="systems-section shell" id="systems" aria-labelledby="systems-title">
+        <div class="section-heading"><div><div class="eyebrow subdued">SEE THE SYSTEM / 002</div><h2 id="systems-title">A fix changes<br /><span class="muted">more than one thing.</span></h2></div><p>A control can interrupt a failure and create a new queue. Explore accumulation, delayed response, and the people downstream of the decision.</p></div>
+        <div class="systems-studio" data-auth-required inert>
+          <div class="map-panel"><div class="eyebrow">THE FEEDBACK STRUCTURE</div>
+            <svg id="causal-map" viewBox="0 0 580 360" role="img" aria-label="Arrivals add to unresolved work. Review capacity removes work. Unresolved work triggers a delayed response that reduces intake and increases deferred arrivals.">
+              <defs><marker id="map-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0 0L10 5L0 10" fill="#95bcb2"/></marker></defs>
+              <path class="flow-path" d="M125 85H238"/><path class="flow-path" d="M355 85H458"/>
+              <path class="feedback-path" d="M296 125V230H128V127"/>
+              <path class="defer-path" d="M112 120V300H420"/>
+              <g class="map-node"><rect x="25" y="50" width="115" height="75" rx="10"/><text x="82" y="79">NEW ARRIVALS</text><text x="82" y="102" class="node-small">incoming work</text></g>
+              <g class="map-node stock"><rect x="237" y="46" width="119" height="80" rx="10"/><text x="296" y="78">UNRESOLVED</text><text x="296" y="101">WORK</text></g>
+              <g class="map-node"><rect x="453" y="50" width="108" height="75" rx="10"/><text x="507" y="79">HUMAN REVIEW</text><text x="507" y="102" class="node-small">12 / cycle</text></g>
+              <text x="186" y="69" class="edge-label">+ inflow</text><text x="399" y="69" class="edge-label">− outflow</text>
+              <g class="map-node response"><rect x="191" y="201" width="210" height="59" rx="10"/><text x="296" y="226">B1 / CAPACITY RESPONSE</text><text x="296" y="246" class="node-small">arrives after a delay</text></g>
+              <text x="143" y="180" class="edge-label">− intake</text><text x="317" y="164" class="edge-label">+ pressure to act</text>
+              <g class="map-node deferred"><rect x="421" y="274" width="141" height="58" rx="10"/><text x="491" y="298">DEFERRED ARRIVALS</text><text x="491" y="317" class="node-small">the displaced cost</text></g>
+              <text x="240" y="323" class="edge-label">Where does the burden move?</text>
+              <circle class="flow-particle" r="3"><animateMotion dur="3s" repeatCount="indefinite" path="M125 85H238"/></circle><circle class="flow-particle mint" r="3"><animateMotion dur="4s" repeatCount="indefinite" path="M355 85H458"/></circle>
+            </svg>
+            <p class="system-observation" id="feedback-insight">Each exception can become a precedent in the next decision.</p>
+          </div>
+          <div class="dynamics-panel"><div class="eyebrow">CHANGE THE CONDITIONS</div>
+            <label for="pressure">Incoming demand <output id="pressure-value" for="pressure"></output></label><input id="pressure" type="range" min="6" max="24" value="18" step="1" />
+            <label for="delay">Delay before the response <output id="delay-value" for="delay"></output></label><input id="delay" type="range" min="0" max="6" value="3" step="1" />
+            <label for="response-policy">Operating response</label><select id="response-policy"><option value="adaptive">Throttle intake to available capacity</option><option value="block-all">Stop all new intake</option><option value="observe">Observe without changing intake</option></select>
+            <svg id="dynamics-chart" viewBox="0 0 600 212" role="img" aria-label="Unresolved work over twelve synthetic cycles"><line x1="36" y1="174" x2="566" y2="174" stroke="#34464f"/><line x1="36" y1="34" x2="566" y2="34" stroke="#25373d" stroke-dasharray="3 5"/><text x="10" y="179">0</text><text x="5" y="39" id="chart-max">100</text><text x="36" y="200">CYCLE 0</text><text x="492" y="200">CYCLE 12</text><line id="delay-marker" x1="167" x2="167" y1="24" y2="174" stroke="#cfcbc0" opacity=".45" stroke-dasharray="3 5"/><path id="baseline-line" fill="none" stroke="#ff755f" stroke-width="2.5"/><path id="controlled-line" fill="none" stroke="#9be5d1" stroke-width="2.5"/></svg>
+            <div class="chart-legend"><span><i class="coral-key"></i>Unchecked queue</span><span><i class="mint-key"></i>Selected response</span><span>┊ Response starts</span></div>
+            <div class="system-metrics" aria-live="polite"><div><strong id="queue-value">—</strong><span>queue after response</span></div><div><strong id="uncontrolled-value">—</strong><span>unchecked queue</span></div><div><strong id="deferred-value">—</strong><span>deferred arrivals</span></div></div>
+            <p id="model-conclusion" class="model-conclusion"></p><button type="button" class="text-button" id="reset-dynamics">↺ Reset conditions</button>
+          </div>
+        </div>
+        <details class="model-method"><summary>Read the model, assumptions, and limits</summary><p>This is an illustrative stock-and-flow model, not an operational forecast or an AI evaluation. Queue(next) = max(0, queue + admitted arrivals − completed reviews). Initial queue: 6. Capacity: 12 per cycle. Horizon: 12 cycles. After the selected delay, throttling admits at most 9 arrivals while the queue exceeds 6, then at most 12. Deferred arrivals accumulate separately; they do not disappear. Stopping intake admits zero after the delay. The chart is an exploratory aid and does not add score points. Record the human tradeoff in your decision rationale.</p></details>
+        <div class="ethos-row"><div><span>01 / ANTICIPATE</span><h3>Look beyond the first failure.</h3><p>Change the conditions. Inspect what accumulates and what appears later.</p></div><div><span>02 / INCLUDE PEOPLE</span><h3>Ask who absorbs the cost.</h3><p>Bring domain expertise and affected perspectives into the decision.</p></div><div><span>03 / KEEP LEARNING</span><h3>Turn evidence into a practice.</h3><p>Assign responsibility, preserve uncertainty, and test again after change.</p></div></div>
+        <a class="text-link" href="https://www.syntonyresearch.ai/insights/2026/08/11/who-can-you-trust/">Read Syntony’s human-led approach <span aria-hidden="true">↗</span></a>
+      </section>
+
+      <section class="github-section shell" id="github" aria-labelledby="github-title">
+        <div class="github-intro"><div class="eyebrow subdued">FROM EXPERIMENT TO ARTIFACT / 003</div><h2 id="github-title">Good findings<br />deserve a paper trail.</h2><p>Bring your challenge into the way your team already works. Keep the attack, the control, and the regression evidence together.</p><a class="text-link" href="https://www.syntonyresearch.ai/challenge/challenge-kit.zip" download>Download the GitHub-ready kit <span aria-hidden="true">↓</span></a></div>
+        <div class="github-card" data-auth-required inert><div class="github-card-header"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-3.16 19.49c.5.09.68-.22.68-.48v-1.86c-2.78.6-3.37-1.18-3.37-1.18-.45-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.61.07-.61 1 .07 1.53 1.03 1.53 1.03.89 1.52 2.34 1.08 2.91.83.09-.65.35-1.09.63-1.34-2.22-.25-4.55-1.11-4.55-4.95 0-1.09.39-1.98 1.03-2.68-.11-.25-.45-1.27.1-2.65 0 0 .84-.27 2.75 1.02A9.6 9.6 0 0 1 12 6.82c.85 0 1.71.11 2.51.34 1.91-1.29 2.75-1.02 2.75-1.02.55 1.38.21 2.4.1 2.65.64.7 1.03 1.59 1.03 2.68 0 3.85-2.34 4.7-4.57 4.94.36.31.68.92.68 1.85v2.75c0 .27.18.58.69.48A10 10 0 0 0 12 2Z"/></svg><span>YOUR FINDING. YOUR REPOSITORY.</span><span aria-hidden="true">↗</span></div><div class="repo-form"><label for="repo">GitHub repository</label><div class="repo-input-wrap"><span>github.com /</span><input type="text" id="repo" placeholder="owner/repository" autocomplete="off" spellcheck="false" /></div><button id="github-draft" class="button button-secondary" type="button">Create a finding draft <span aria-hidden="true">↗</span></button><p id="github-status" class="github-status" role="status" aria-live="polite">Opens a prefilled GitHub issue for your review. Nothing is submitted automatically.</p></div><div class="kit-contents"><span><span aria-hidden="true">↳</span> Issue templates</span><span>CI regression checks</span><span>Evidence schema</span></div></div>
+      </section>
+
+      <section class="teams-section" id="teams" aria-labelledby="teams-title">
+        <div class="teams-inner shell"><div class="teams-copy"><div class="eyebrow">THE NEXT STEP IS YOURS / 004</div><h2 id="teams-title">The next test<br />is <em>your system.</em></h2><p>This is a simulation. Your business has real dependencies, people, and consequences. Syntony brings evaluation, governance, and assurance into one continuous practice.</p><a class="button button-dark" href="https://cal.com/nathan-heath-byhebw/schedule-a-technical-consultation" target="_blank" rel="noopener noreferrer">Scope an AI assurance assessment <span aria-hidden="true">↗</span></a><a class="teams-services" href="https://syntonyresearch.ai/services/" target="_blank" rel="noopener noreferrer">Explore Syntony’s approach <span aria-hidden="true">↗</span></a></div><div class="teams-diagram" aria-hidden="true"><div class="diagram-line diagram-line-one"></div><div class="diagram-line diagram-line-two"></div><div class="diagram-line diagram-line-three"></div><div class="diagram-core"><span>syn</span><span>tony.</span></div><div class="diagram-node node-evaluate"><span>01</span>EVALUATE</div><div class="diagram-node node-govern"><span>02</span>GOVERN</div><div class="diagram-node node-assure"><span>03</span>ASSURE</div><span class="diagram-caption">ALIGN THE SYSTEM.<br />EARN THE TRUST.</span></div></div>
+      </section>
+    </main>
+
+    <footer class="site-footer shell"><a class="wordmark footer-wordmark" href="https://syntonyresearch.ai/" target="_blank" rel="noopener noreferrer"><img src="logo.svg" alt="" width="34" height="34" /><span>syntony<span class="wordmark-dot">.</span></span></a><p>Evaluate. Govern. Assure. Repeat. <a href="https://www.syntonyresearch.ai/privacy/">Privacy</a></p><a href="#mission">Back to the signal <span aria-hidden="true">↑</span></a></footer>
+  </body>
+</html>

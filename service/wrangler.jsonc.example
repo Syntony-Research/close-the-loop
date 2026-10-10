@@ -1,0 +1,17 @@
+{
+  "name": "your-close-the-loop-service",
+  "main": "worker/index.js",
+  "compatibility_date": "2026-10-01",
+  "d1_databases": [{
+    "binding": "DB",
+    "database_name": "your-arena-db",
+    "database_id": "REPLACE_WITH_YOUR_D1_DATABASE_ID",
+    "migrations_dir": "drizzle"
+  }],
+  "vars": {
+    "ARENA_LIVE_ENABLED": "false",
+    "ARENA_ALLOWED_ORIGINS": "https://your-org.github.io",
+    "AUTH_BASE_URL": "https://your-arena.your-account.workers.dev",
+    "AUTH_FRONTEND_URL": "https://your-org.github.io/close-the-loop/"
+  }
+}

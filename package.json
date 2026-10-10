@@ -1,0 +1,15 @@
+{
+  "name": "syntony-close-the-loop-kit",
+  "version": "1.2.0",
+  "private": true,
+  "type": "module",
+  "description": "Systems thinking for AI red teaming: synthetic worlds, governance controls, and replayable evidence.",
+  "license": "MIT",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.mjs service/test/*.test.mjs",
+    "replay": "node scripts/replay.mjs --submissions submissions"
+  }
+}

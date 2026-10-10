@@ -1,0 +1,13 @@
+import {readFile,writeFile,mkdir,copyFile} from 'node:fs/promises';
+import {existsSync} from 'node:fs';
+import {fileURLToPath} from 'node:url';
+const root=fileURLToPath(new URL('../',import.meta.url));
+const world=await readFile(root+'worker/world.mjs','utf8');
+const auth=await readFile(root+'worker/auth.mjs','utf8');
+const service=(await readFile(root+'worker/service.mjs','utf8')).replace(/^import[^\n]+from '\.\/(world|auth)\.mjs';\n/gm,'');
+await writeFile(root+'worker/index.js',world+'\n'+auth+'\n'+service);
+await mkdir(root+'dist/server',{recursive:true});
+await mkdir(root+'dist/.openai',{recursive:true});
+await copyFile(root+'worker/index.js',root+'dist/server/index.js');
+if(existsSync(root+'.openai/hosting.json'))await copyFile(root+'.openai/hosting.json',root+'dist/.openai/hosting.json');
+console.log('Built the single-module arena service.');

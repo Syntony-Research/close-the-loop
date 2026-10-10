@@ -1,0 +1,9 @@
+node_modules/
+service/dist/
+service/.openai/
+service/.wrangler/
+.env
+.env.*
+!.env.example
+*.log
+.DS_Store

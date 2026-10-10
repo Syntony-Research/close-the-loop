@@ -1,0 +1,255 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "challenge",
+    "scenarioId",
+    "payload",
+    "controlId",
+    "evidence",
+    "record",
+    "governance",
+    "totalScore",
+    "maxScore"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "1.1.0"
+    },
+    "challenge": {
+      "const": "close-the-loop"
+    },
+    "scenarioId": {
+      "enum": [
+        "support-refund",
+        "research-citation",
+        "vendor-export",
+        "cumulative-budget",
+        "review-backlog"
+      ]
+    },
+    "payload": {
+      "type": "string",
+      "maxLength": 12000
+    },
+    "controlId": {
+      "enum": [
+        "none",
+        "approval",
+        "citations",
+        "egress",
+        "cumulative",
+        "capacity",
+        "block-all"
+      ]
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "before",
+        "after",
+        "regression",
+        "technicalScore",
+        "maxTechnicalScore"
+      ],
+      "properties": {
+        "before": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "breached",
+            "recognized",
+            "events",
+            "summary"
+          ],
+          "properties": {
+            "breached": {
+              "type": "boolean"
+            },
+            "recognized": {
+              "type": "boolean"
+            },
+            "events": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "stage",
+                  "status",
+                  "detail"
+                ],
+                "properties": {
+                  "stage": {
+                    "type": "string"
+                  },
+                  "status": {
+                    "type": "string"
+                  },
+                  "detail": {
+                    "type": "string"
+                  }
+                }
+              },
+              "maxItems": 100
+            },
+            "summary": {
+              "type": "string"
+            }
+          }
+        },
+        "after": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "breached",
+            "recognized",
+            "events",
+            "summary"
+          ],
+          "properties": {
+            "breached": {
+              "type": "boolean"
+            },
+            "recognized": {
+              "type": "boolean"
+            },
+            "events": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "stage",
+                  "status",
+                  "detail"
+                ],
+                "properties": {
+                  "stage": {
+                    "type": "string"
+                  },
+                  "status": {
+                    "type": "string"
+                  },
+                  "detail": {
+                    "type": "string"
+                  }
+                }
+              },
+              "maxItems": 100
+            },
+            "summary": {
+              "type": "string"
+            }
+          }
+        },
+        "regression": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "passed",
+            "total",
+            "cases"
+          ],
+          "properties": {
+            "passed": {
+              "type": "number"
+            },
+            "total": {
+              "type": "number"
+            },
+            "cases": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "name",
+                  "passed",
+                  "kind"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "passed": {
+                    "type": "boolean"
+                  },
+                  "kind": {
+                    "type": "string"
+                  }
+                }
+              },
+              "maxItems": 100
+            }
+          }
+        },
+        "technicalScore": {
+          "type": "number"
+        },
+        "maxTechnicalScore": {
+          "type": "number"
+        }
+      }
+    },
+    "record": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "owner",
+        "decision",
+        "retest",
+        "notes"
+      ],
+      "properties": {
+        "owner": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "decision": {
+          "enum": [
+            "",
+            "hold",
+            "conditional-release",
+            "release"
+          ]
+        },
+        "retest": {
+          "type": "string",
+          "maxLength": 400
+        },
+        "notes": {
+          "type": "string",
+          "maxLength": 3000
+        }
+      }
+    },
+    "governance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "completenessScore",
+        "maxCompletenessScore"
+      ],
+      "properties": {
+        "completenessScore": {
+          "type": "number"
+        },
+        "maxCompletenessScore": {
+          "type": "number"
+        }
+      }
+    },
+    "totalScore": {
+      "type": "number"
+    },
+    "maxScore": {
+      "type": "number"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Syntony Close the Loop Evidence Pack",
+  "description": "Structural schema. The trusted replay engine is authoritative for computed evidence and scores."
+}
