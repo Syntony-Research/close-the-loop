@@ -1,4 +1,5 @@
 // BLACKLINE is a deterministic learning simulation. No model or live system is called.
+import {getOperator} from './operators.js?v=operators-1';
 const clamp = value => Math.max(0, Math.min(100, Math.round(value)));
 const rotate = (items, places) => items.slice(places).concat(items.slice(0, places));
 
@@ -470,7 +471,7 @@ export const CAMPAIGNS = {
 const METRIC_KEYS = ['continuity', 'trust', 'exposure', 'review'];
 const PHASES = ['evaluate', 'govern', 'assure', 'debrief', 'completed'];
 const RUN_KEYS = ['version', 'campaignId', 'level', 'phase', 'score', 'metrics', 'history', 'selectedAttack', 'selectedControl', 'answers', 'attempts', 'attempt'];
-const RUN_OPTIONAL_KEYS = ['operatorId', 'operatorName', 'levelStartMetrics', 'finding', 'governance', 'result'];
+const RUN_OPTIONAL_KEYS = ['operatorId', 'operatorName', 'operatorState', 'operatorAction', 'levelStartMetrics', 'finding', 'governance', 'result'];
 const invalidSave = () => { throw new Error('The saved campaign is invalid or exceeds supported limits. Start a new run.'); };
 const integer = (value, min, max) => Number.isSafeInteger(value) && value >= min && value <= max;
 const textValue = value => typeof value === 'string' && value.length <= 4096;
@@ -537,8 +538,9 @@ function findingValid(value) {
     && value.points === (value.successful ? 20 : 0) && integer(value.effectiveness, 0, 100) && integer(value.pressure, 0, 19);
 }
 function governanceValid(value, control) {
-  return fields(value, ['summary','owner','decision','rationale','control','quality','retest','deployment'])
+  return fields(value, ['summary','owner','decision','rationale','control','quality','retest','deployment'],['operatorAdjustment'])
     && stringsValid(value, ['summary','owner','decision','rationale','control','retest']) && value.quality === control.quality
+    && (!Object.hasOwn(value,'operatorAdjustment') || textValue(value.operatorAdjustment))
     && value.deployment === ({targeted:'SCOPED RELEASE',blanket:'GLOBAL HOLD',cosmetic:'EXPOSED RELEASE'})[control.quality];
 }
 function criteriaValid(criteria, level) {
@@ -574,6 +576,43 @@ function resultValid(value, level) {
     && value.score === Object.values(rubric).reduce((total, points) => total + points, 0);
 }
 
+function abilityOptionsValid(id, options, level) {
+  if (!record(options) || !boundedData(options)) return false;
+  if (id === 'cipher') return fields(options,['edge']) && ['source','advice','action'].includes(options.edge);
+  if (id === 'relay') return fields(options,['verified','contested']) && ['run','review','hold'].includes(options.verified) && ['run','review','hold'].includes(options.contested);
+  if (id === 'null') return fields(options,['attackId']) && level.attacks.some(attack => attack.id === options.attackId);
+  return fields(options,[]);
+}
+function operatorActionValid(action, id, campaign) {
+  if (!fields(action,['operatorId','abilityName','level','attempt','options','summary','report','metricDeltas','excludedControlId'])
+    || action.operatorId !== id || action.abilityName !== getOperator(id).abilityName || !integer(action.level,1,10)
+    || !integer(action.attempt,1,Number.MAX_SAFE_INTEGER-1) || !textValue(action.summary) || !metricsValid(action.metricDeltas,-100)
+    || !Array.isArray(action.report) || action.report.length > 12 || !action.report.every(row => fields(row,['label','value','detail']) && stringsValid(row,['label','value','detail']))) return false;
+  const level=campaign.levels[action.level-1];
+  return abilityOptionsValid(id,action.options,level) && action.excludedControlId === (id==='sigil' ? level.controls.find(control=>control.quality==='cosmetic').id : null);
+}
+function normalizeOperator(run, campaign) {
+  const operator=getOperator(run.operatorId ?? 'cipher');
+  if (!operator) invalidSave();
+  const hasState=Object.hasOwn(run,'operatorState'),hasAction=Object.hasOwn(run,'operatorAction');
+  if (!hasState && !hasAction) {
+    run.operatorState={remaining:3,used:false,logs:[]};run.operatorAction=null;
+  } else if (!hasState || !hasAction) invalidSave();
+  run.operatorId=operator.id;run.operatorName=operator.name;
+  const state=run.operatorState;
+  if (!fields(state,['remaining','used','logs']) || !integer(state.remaining,0,3) || typeof state.used!=='boolean'
+    || !Array.isArray(state.logs) || state.logs.length>3 || state.remaining!==3-state.logs.length
+    || !state.logs.every(action=>operatorActionValid(action,operator.id,campaign))) invalidSave();
+  for (let i=0;i<state.logs.length;i++) {
+    const action=state.logs[i],prior=state.logs[i-1];
+    if (action.level>run.level+1 || (action.level===run.level+1 && action.attempt>run.attempt)
+      || (prior && (action.level<prior.level || (action.level===prior.level && action.attempt<=prior.attempt)))) invalidSave();
+  }
+  const last=state.logs.at(-1),used=!!last&&last.level===run.level+1&&last.attempt===run.attempt;
+  if (state.used!==used || (used ? !operatorActionValid(run.operatorAction,operator.id,campaign)
+    || JSON.stringify(run.operatorAction)!==JSON.stringify(last) : run.operatorAction!==null)) invalidSave();
+}
+
 function inspectRun(input) {
   if (!record(input) || Object.keys(input).length > 32) invalidSave();
   if (Object.keys(input).some(key => !Object.hasOwn(Object.getOwnPropertyDescriptor(input,key), 'value'))) invalidSave();
@@ -590,12 +629,13 @@ function inspectRun(input) {
     || !Array.isArray(run.attempts) || run.attempts.length > 200
     || ['operatorId','operatorName'].some(key => Object.hasOwn(run,key) && (typeof run[key] !== 'string' || run[key].length > 160))) invalidSave();
   const campaign = CAMPAIGNS[run.campaignId], level = campaign.levels[run.level];
+  normalizeOperator(run,campaign);
   if (!answersValid(run.answers, level)) invalidSave();
   const afterReplay = run.phase === 'debrief' || run.phase === 'completed';
   const expectedHistory = run.level + (afterReplay && run.result?.passed === true ? 1 : 0);
   if (run.history.length !== expectedHistory || run.history.some((entry, index) => {
     const mission = campaign.levels[index];
-    if (!fields(entry, ['level','id','title','stakes','boundary','attack','finding','control','governance','result','score','metricsBefore','metricsAfter','evidence','pipeline'])
+    if (!fields(entry, ['level','id','title','stakes','boundary','attack','finding','control','governance','result','score','metricsBefore','metricsAfter','evidence','pipeline'],['operatorAction'])
       || entry.level !== index + 1 || entry.id !== mission.id || !integer(entry.score,0,100)
       || !stringsValid(entry,['title','stakes','boundary','pipeline']) || !findingValid(entry.finding)
       || !fields(entry.attack,['id','name','description','mechanism','payload','effectiveness','trace'])
@@ -609,7 +649,12 @@ function inspectRun(input) {
       || entry.score !== entry.result.score || entry.finding.successful !== entry.result.originalReproduced
       || !metricsValid(entry.metricsBefore) || !metricsValid(entry.metricsAfter) || !Array.isArray(entry.evidence) || entry.evidence.length !== 3
       || !entry.evidence.every(item => fields(item,['source','text','trust']) && stringsValid(item,['source','text','trust']))) return true;
-    return METRIC_KEYS.some(key => entry.result.metricDeltas[key] !== entry.metricsAfter[key] - entry.metricsBefore[key]);
+    if (entry.operatorAction != null && (!operatorActionValid(entry.operatorAction,run.operatorId,campaign)
+      || entry.operatorAction.level!==entry.level || entry.operatorAction.attempt!==entry.result.attempt
+      || !run.operatorState.logs.some(action=>JSON.stringify(action)===JSON.stringify(entry.operatorAction)))) return true;
+    const projected=controlProjection({levelStartMetrics:entry.metricsBefore,operatorAction:entry.operatorAction},entry.control);
+    return entry.result.blocked!==projected.blocked || entry.result.useful!==projected.useful
+      || METRIC_KEYS.some(key => entry.result.metricDeltas[key] !== entry.metricsAfter[key] - entry.metricsBefore[key]);
   }) || run.score !== run.history.reduce((total, entry) => total + entry.score, 0)) invalidSave();
   if (run.attempts.some(item => !fields(item,['level','attempt','passed','score','criteria']) || !integer(item.level,1,run.level+1)
     || !integer(item.attempt,1,Number.MAX_SAFE_INTEGER-1) || !integer(item.score,0,100)
@@ -626,10 +671,13 @@ function inspectRun(input) {
     return run;
   }
   if (!control || !governanceValid(run.governance,control)) invalidSave();
+  if (run.operatorAction?.excludedControlId===control.id) invalidSave();
   if (run.phase === 'assure') { if (run.result != null) invalidSave(); return run; }
   if (!resultValid(run.result,level) || run.result.attempt !== run.attempt || run.result.originalReproduced !== run.finding.successful
     || run.result.decisions.some(item => JSON.stringify(item.selected) !== JSON.stringify(Object.hasOwn(run.answers,item.key) ? run.answers[item.key] : []))
     || METRIC_KEYS.some(key => run.result.metricDeltas[key] !== run.metrics[key] - run.levelStartMetrics[key])) invalidSave();
+  const projected=controlProjection(run,control);
+  if (run.result.blocked!==projected.blocked || run.result.useful!==projected.useful) invalidSave();
   if (run.result.passed && (run.history.at(-1).score !== run.result.score || JSON.stringify(run.history.at(-1).result) !== JSON.stringify(run.result))) invalidSave();
   if (run.phase === 'completed' && (run.level !== 9 || run.history.length !== 10 || run.result.passed !== true)) invalidSave();
   return run;
@@ -642,9 +690,12 @@ export function validateRun(input) {
   try { return structuredClone(inspectRun(input)); } catch { invalidSave(); }
 }
 
-export function createRun(campaignId) {
+export function createRun(campaignId,operatorId='cipher') {
   if (!knownCampaign(campaignId)) throw new Error('Choose a valid mission stream.');
+  const operator=getOperator(operatorId);
+  if (!operator) throw new Error('Choose one of the nine operators.');
   return {version: 2, campaignId, level: 0, phase: 'evaluate', score: 0,
+    operatorId:operator.id,operatorName:operator.name,operatorState:{remaining:3,used:false,logs:[]},operatorAction:null,
     metrics: {continuity: 100, trust: 100, exposure: 0, review: 0}, history: [],
     selectedAttack: null, selectedControl: null, answers: {}, attempts: [], attempt: 1};
 }
@@ -659,18 +710,150 @@ function moveMetrics(metrics, changes) {
   return Object.fromEntries(METRIC_KEYS.map(key => [key, clamp(metrics[key] + (Object.hasOwn(changes,key) ? changes[key] : 0))]));
 }
 
+const GOVERNANCE_EFFECTS={
+  targeted:{continuity:-1,trust:1,exposure:-5,review:3},
+  blanket:{continuity:-14,trust:-5,exposure:-9,review:18},
+  cosmetic:{continuity:0,trust:-1,exposure:3,review:1}
+};
+function controlProjection(run,control) {
+  const incoming=run.levelStartMetrics;
+  const loadPenalty=Math.round(incoming.review*.18+(100-incoming.continuity)*.16);
+  let blocked=control.quality==='cosmetic'?0:3;
+  let capacity=control.quality==='blanket'?32:100;
+  let governanceEffects=GOVERNANCE_EFFECTS[control.quality];
+  let replayEffects=control.quality==='targeted'?{continuity:6,trust:6,exposure:-9,review:-9}
+    :control.quality==='blanket'?{continuity:-9,trust:-6,exposure:-7,review:9}
+    :{continuity:-5-Math.floor((run.level??0)/3),trust:-10,exposure:13,review:5};
+  let note='';
+  const action=run.operatorAction;
+  if(action?.operatorId==='cipher'){
+    if(action.options.edge==='action'&&control.quality==='cosmetic'){
+      blocked=3;capacity=88;
+      governanceEffects={continuity:-3,trust:1,exposure:-5,review:5};
+      replayEffects={continuity:4,trust:3,exposure:-8,review:-4};
+      note='WIRECUT installed an enforcing action gate behind the advisory response. Its inspection lane has 88% baseline capacity.';
+    }else if(action.options.edge==='source'){
+      blocked=3;capacity=Math.min(capacity,50);
+      governanceEffects={continuity:-10,trust:-3,exposure:-6,review:8};
+      replayEffects={continuity:-7,trust:-3,exposure:-6,review:6};
+      note='WIRECUT severed source intake, including verified work. Containment comes with at most 50% baseline useful capacity.';
+    }else if(action.options.edge==='advice')note='WIRECUT cut only the advice edge; this adds no enforcement to the chosen control.';
+  }
+  if(action?.operatorId==='relay'){
+    if(action.options.verified==='run'&&action.options.contested!=='run'&&control.quality==='blanket'){
+      capacity=88;
+      governanceEffects={continuity:-3,trust:1,exposure:-6,review:6};
+      replayEffects={continuity:3,trust:2,exposure:-8,review:-3};
+      note='EXPRESS LANE keeps the global hold on contested work while verified work uses an 88% baseline capacity lane.';
+    }
+    if(action.options.verified!=='run'){
+      capacity=Math.min(capacity,50);
+      note+=' Verified work was diverted away from execution; baseline useful capacity is capped at 50%.';
+    }
+    if(action.options.contested==='run'){
+      blocked=0;
+      governanceEffects={continuity:-1,trust:-4,exposure:7,review:4};
+      replayEffects={continuity:-3,trust:-8,exposure:10,review:6};
+      note+=' The contested execution lane bypasses containment; all three variants remain possible.';
+    }
+  }
+  return {blocked,useful:clamp(capacity-loadPenalty),loadPenalty,governanceEffects,replayEffects,note:note.trim()};
+}
+
+export function getOperatorStatus(input) {
+  const run=validateRun(input),operator=getOperator(run.operatorId),state=run.operatorState;
+  let reason='Ready. One charge will be spent for this attempt.';
+  if(run.phase==='completed')reason='This campaign is complete.';
+  else if(state.used)reason='This attempt’s tactical ability has already been used.';
+  else if(!state.remaining)reason='All three campaign charges have been spent.';
+  else if(run.phase!==operator.phase)reason=`Available during ${operator.phase.toUpperCase()}.`;
+  else if(operator.id==='bastion'&&(run.result?.passed||!run.finding?.successful))reason='SECOND LINE needs a failed replay with a reproduced original failure.';
+  return {operatorId:operator.id,abilityName:operator.abilityName,phase:operator.phase,remaining:state.remaining,used:state.used,
+    available:reason.startsWith('Ready.'),reason};
+}
+
+export function useOperatorAbility(input,options={}) {
+  let run=validateRun(input);
+  const status=getOperatorStatus(run),operator=getOperator(run.operatorId),level=CAMPAIGNS[run.campaignId].levels[run.level];
+  if(!status.available)throw new Error(status.reason);
+  if(!abilityOptionsValid(operator.id,options,level))throw new Error('Choose valid options for this operator ability.');
+  const before={...run.metrics},report=[];
+  const row=(label,value,detail)=>report.push({label,value:String(value),detail});
+  let summary='',excludedControlId=null;
+  if(operator.id==='cipher'){
+    const edge=options.edge;
+    run={...run,metrics:moveMetrics(run.metrics,{review:2})};
+    summary=edge==='action'?'WIRECUT adds enforcement at the action edge. A cosmetic response can now block all variants, with 88% baseline useful capacity.'
+      :edge==='source'?'WIRECUT cuts the source edge. Attacks are stopped alongside verified inputs; useful capacity is capped at 50%.'
+      :'WIRECUT cuts the advice edge. The action path remains unchanged; this does not reinforce a cosmetic response.';
+    row('Edge selected',edge.toUpperCase(),summary);row('Cost','+2 review backlog','One charge is spent. Inherited load still reduces useful capacity; every governance decision check remains required.');
+  }else if(operator.id==='aegis'){
+    const control=level.controls.find(control=>control.id===run.selectedControl),p=controlProjection(run,control);
+    row('Failure reproduced',run.finding.successful?'READY':'GAP','The original failure must be reproduced before a repair can be proven.');
+    row('Containment',run.finding.successful&&p.blocked===3?'READY':'GAP',`${p.blocked}/3 variants projected blocked. Replay still has to record the result.`);
+    row('Useful work',p.useful>=80?'READY':'GAP',`${p.useful}% projected; at least 80% is required.`);
+    for(const field of level.challenge.fields){const selected=run.answers[field.key]||[];row(field.question,decisionCorrect(field,selected)?'READY':'GAP','Review your selected decision against the mission evidence. PREFLIGHT does not fill or alter answers.');}
+    summary='PREFLIGHT captured current replay readiness. This snapshot awards no points and must be checked again if you change a decision.';
+  }else if(operator.id==='trace'){
+    run={...run,phase:'evaluate',metrics:{...run.levelStartMetrics},levelStartMetrics:null,selectedAttack:null,selectedControl:null,finding:null,governance:null,result:null,answers:{}};
+    summary='RETRACE restored the pre-evaluation checkpoint. Choose another attack route in the same attempt; the charge stays spent.';
+    row('Evaluation reopened','CHOOSE ANOTHER ROUTE','The prior finding is cleared. No control or score has been carried into this new test.');
+  }else if(operator.id==='relay'){
+    const cost={review:options.contested==='review'?6:options.contested==='hold'?2:4,trust:options.contested==='hold'?-2:0};
+    if(options.verified!=='run'){cost.continuity=-6;cost.trust-=2;}
+    run={...run,metrics:moveMetrics(run.metrics,cost)};
+    summary='EXPRESS LANE routes verified and contested work separately. Verified execution plus contested review or hold can restore a blanket control to 88% baseline capacity.';
+    row('Verified lane',options.verified.toUpperCase(),options.verified==='run'?'Verified work remains eligible for execution.':'Verified work leaves execution; useful capacity is capped at 50%.');
+    row('Contested lane',options.contested.toUpperCase(),options.contested==='run'?'Contested execution bypasses containment, even with a targeted control.':options.contested==='review'?'+6 review backlog; a human review queue carries the disputed work.':'+2 review backlog and −2 trust; contested work waits on hold.');
+    row('Routing cost',METRIC_KEYS.filter(key=>run.metrics[key]!==before[key]).map(key=>`${key} ${run.metrics[key]-before[key]>=0?'+':''}${run.metrics[key]-before[key]}`).join(' · ')||'No further meter movement','Applied immediately. The selected control and assurance replay apply their own additional consequences.');
+    row('Release limits','CONTROL STILL REQUIRED','The alternate 88% capacity path applies to a blanket hold. Cosmetic warnings still need enforcement; inherited load and every decision check still count.');
+  }else if(operator.id==='null'){
+    const preview=evaluateAttack(run,options.attackId).finding;
+    summary='SANDBOX previewed one attack route. No finding was recorded, no metrics changed, and evaluation remains open.';
+    row('Attack previewed',level.attacks.find(attack=>attack.id===options.attackId).name,`Route ${options.attackId}. This record remains a snapshot if you later choose another route.`);
+    row('Projected boundary',preview.successful?'FAILURE':'HELD',`Simulated effectiveness ${preview.effectiveness}/100; choose and run a real mission evaluation to record a finding.`);
+    preview.trace.forEach((line,index)=>row(`Preview trace ${index+1}`,'SIMULATION',line));
+  }else if(operator.id==='bastion'){
+    run={...run,phase:'govern',metrics:moveMetrics(run.levelStartMetrics,{continuity:-2,trust:-3,exposure:7+Math.floor(run.level/3),review:2}),selectedControl:null,governance:null,result:null,answers:{}};
+    summary='SECOND LINE restored the post-evaluation checkpoint. The reproduced finding remains; choose a new control and complete every decision check again.';
+    row('Governance reopened','SAME FINDING','Failed governance and replay consequences are rolled back. No score was earned or refunded; the tactical charge stays spent.');
+  }else if(operator.id==='sigil'){
+    const cosmetic=level.controls.find(control=>control.quality==='cosmetic'),targeted=level.controls.find(control=>control.quality==='targeted');
+    excludedControlId=cosmetic.id;
+    summary='DECODE excluded the cosmetic response. Compare the remaining scoped control and blanket hold against continuity needs.';
+    row('Excluded response',cosmetic.name,'A warning does not establish authority or enforce the consequential action boundary.');
+    row('Authorized operating rule',level.evidence[2].source,level.evidence[2].text);
+    row('Enforcing rationale',targeted.name,targeted.rationale);
+  }else if(operator.id==='glitch'){
+    run={...run,metrics:moveMetrics(run.metrics,{exposure:6,review:4})};
+    summary='OVERDRIVE armed a +22 effectiveness boost for the consensus route only. Exposure rises by 6 and review backlog by 4 before the evaluation checkpoint.';
+    row('Boost armed','+22 CONSENSUS ONLY','Presentation and provenance routes receive no effectiveness bonus. Reproduction, containment, useful work, and all decision gates still apply.');
+    row('Arming cost','+6 exposure · +4 review','The cost remains in the evaluation checkpoint on retry. Spending a charge never awards points by itself.');
+  }else if(operator.id==='root'){
+    for(const control of level.controls){const p=controlProjection(run,control),after=moveMetrics(moveMetrics(run.metrics,p.governanceEffects),p.replayEffects);
+      row(control.name,`${p.blocked} variants · ${p.useful}% useful`,`${METRIC_KEYS.map(key=>`${key} ${after[key]-run.metrics[key]>=0?'+':''}${after[key]-run.metrics[key]}`).join(' · ')}. These are projected governance/replay consequences, not a completed test.`);}
+    summary='FORK compared the three control paths without committing one. No metrics, answers, or points changed.';
+  }
+  const action={operatorId:operator.id,abilityName:operator.abilityName,level:run.level+1,attempt:run.attempt,options:structuredClone(options),summary,report,
+    metricDeltas:Object.fromEntries(METRIC_KEYS.map(key=>[key,run.metrics[key]-before[key]])),excludedControlId};
+  const state=run.operatorState;
+  return validateRun({...run,operatorAction:action,operatorState:{remaining:state.remaining-1,used:true,logs:[...state.logs,structuredClone(action)]}});
+}
+
 export function evaluateAttack(run, attackId) {
+  run=validateRun(run);
   const level = requirePhase(run, 'evaluate');
   const attack = level.attacks.find(a => a.id === attackId);
   if (!attack) throw new Error('Select one of this mission’s adversarial tests.');
   const pressure = Math.floor(run.metrics.exposure / 12) + Math.floor(run.metrics.review / 20) + (run.metrics.continuity < 65 ? 6 : 0);
-  const effective = Math.min(100, attack.effectiveness + pressure);
+  const boost=run.operatorAction?.operatorId==='glitch'&&attack.id.endsWith('-consensus')?22:0;
+  const effective = Math.min(100, attack.effectiveness + pressure + boost);
   const successful = effective >= 65;
   const consequence = successful ? {continuity: -2, trust: -3, exposure: 7 + Math.floor(run.level / 3), review: 2} : {continuity: 0, trust: 0, exposure: 1, review: 1};
-  const inherited = `Inherited pressure: ${run.metrics.review}/100 review backlog, ${run.metrics.continuity}/100 continuity, ${run.metrics.exposure}/100 exposure. ${pressure ? `This adds ${pressure} points to simulated attack effectiveness.` : 'No pressure penalty applies.'}`;
+  const inherited = `Inherited pressure: ${run.metrics.review}/100 review backlog, ${run.metrics.continuity}/100 continuity, ${run.metrics.exposure}/100 exposure. ${pressure ? `This adds ${pressure} points to simulated attack effectiveness.` : 'No pressure penalty applies.'}${boost?' OVERDRIVE adds 22 consensus-route effectiveness points.':''}`;
   const trace = successful
     ? attack.id.endsWith('-consensus')
-      ? [attack.trace[0], 'PRESSURE EFFECT: review congestion collapses shared-source lineage into apparent independent confirmation', 'SIMULATED ACTION: the repeated claim drives a consequential decision without independent corroboration']
+      ? [attack.trace[0], `${boost?'OVERDRIVE':'PRESSURE'} EFFECT: repeated shared-source claims collapse into apparent independent confirmation`, 'SIMULATED ACTION: the repeated claim drives a consequential decision without independent corroboration']
       : [...attack.trace]
     : [attack.trace[0], 'BOUNDARY HELD: this probe did not supply authority for the consequential action', 'SIMULATED ACTION: no prohibited action executed; the core mission risk still requires a control decision'];
   trace.push(inherited);
@@ -682,23 +865,23 @@ export function evaluateAttack(run, attackId) {
 }
 
 export function applyGovernance(run, controlId) {
+  run=validateRun(run);
   const level = requirePhase(run, 'govern');
   if (!run.finding || !level.attacks.some(a => a.id === run.selectedAttack)) throw new Error('Run an adversarial test before governing the finding.');
   const control = level.controls.find(c => c.id === controlId);
   if (!control) throw new Error('Choose one of this mission’s governance responses.');
-  const effects = {
-    targeted: {continuity: -1, trust: 1, exposure: -5, review: 3},
-    blanket: {continuity: -14, trust: -5, exposure: -9, review: 18},
-    cosmetic: {continuity: 0, trust: -1, exposure: 3, review: 1}
-  };
+  if(run.operatorAction?.excludedControlId===controlId)throw new Error('DECODE excluded this cosmetic response. Choose an enforcing control.');
+  const projected=controlProjection(run,control);
   return {...run, phase: 'assure', selectedControl: controlId,
-    metrics: moveMetrics(run.metrics, effects[control.quality]),
+    metrics: moveMetrics(run.metrics, projected.governanceEffects),
     governance: {summary: control.description, owner: control.owner, decision: control.decision,
       rationale: control.rationale, control: control.name, quality: control.quality, retest: level.retest,
+      ...(projected.note?{operatorAdjustment:projected.note}:{}),
       deployment: control.quality === 'targeted' ? 'SCOPED RELEASE' : control.quality === 'blanket' ? 'GLOBAL HOLD' : 'EXPOSED RELEASE'}};
 }
 
 export function answerChallenge(run, key, values) {
+  run=validateRun(run);
   const level = requirePhase(run, 'assure');
   const field = level.challenge.fields.find(f => f.key === key);
   if (!field || !selectionValid(field,values)) throw new Error('Choose a valid mission decision.');
@@ -706,23 +889,24 @@ export function answerChallenge(run, key, values) {
 }
 
 export function retryLevel(run) {
+  run=validateRun(run);
   requirePhase(run, 'debrief');
   if (run.result?.passed) throw new Error('This mission is already beaten. Continue to the next level.');
   if (run.attempt >= Number.MAX_SAFE_INTEGER - 1) throw new Error('This attempt counter has reached its supported limit. Start a new run.');
   if (!run.result || !run.levelStartMetrics || Object.keys(run.metrics).some(k => !Number.isFinite(run.levelStartMetrics[k]) || run.levelStartMetrics[k] < 0 || run.levelStartMetrics[k] > 100)) throw new Error('This checkpoint is invalid.');
-  return {...run, phase:'evaluate', metrics:{...run.levelStartMetrics}, levelStartMetrics:null,
+  return {...run, phase:'evaluate', metrics:{...run.levelStartMetrics}, levelStartMetrics:null,operatorAction:null,operatorState:{...run.operatorState,used:false},
     selectedAttack:null, selectedControl:null, finding:null, governance:null, result:null, answers:{}, attempt:(run.attempt || 1)+1};
 }
 
 export function replay(run) {
+  run=validateRun(run);
   const level = requirePhase(run, 'assure');
   const control = level.controls.find(c => c.id === run.selectedControl);
   const attack = level.attacks.find(a => a.id === run.selectedAttack);
   if (!control || !attack || !run.finding || !run.governance) throw new Error('Complete evaluation and governance before replay.');
   const incoming = run.levelStartMetrics;
-  const loadPenalty = Math.round(incoming.review * 0.18 + (100 - incoming.continuity) * 0.16);
-  const blocked = control.quality === 'cosmetic' ? 0 : 3;
-  const useful = clamp((control.quality === 'blanket' ? 32 : 100) - loadPenalty);
+  const projected=controlProjection(run,control);
+  const {loadPenalty,blocked,useful}=projected;
   const decisions = level.challenge.fields.map(field => {
     const selected = Object.hasOwn(run.answers,field.key) ? run.answers[field.key] : [];
     const correct = decisionCorrect(field,selected);
@@ -737,22 +921,19 @@ export function replay(run) {
     governance: governancePoints
   };
   const score = Object.values(rubric).reduce((sum, n) => sum + n, 0);
-  const effects = control.quality === 'targeted'
-    ? {continuity: 6, trust: 6, exposure: -9, review: -9}
-    : control.quality === 'blanket'
-      ? {continuity: -9, trust: -6, exposure: -7, review: 9}
-      : {continuity: -5 - Math.floor(run.level / 3), trust: -10, exposure: 13, review: 5};
-  const metrics = moveMetrics(run.metrics, effects);
+  const metrics = moveMetrics(run.metrics, projected.replayEffects);
   const metricDeltas = Object.fromEntries(Object.keys(metrics).map(k => [k, metrics[k] - incoming[k]]));
   const originalStatus = run.finding.successful
     ? blocked ? 'The control contained the reproduced original attack.' : 'The reproduced original attack remained possible after the control.'
     : 'The original probe already held before the control; that alone cannot demonstrate a successful repair.';
-  const summary = control.quality === 'targeted'
+  const summary = projected.note
+    ? `${originalStatus} ${blocked}/3 variants blocked; ${useful}% of useful work remained. ${projected.note} Inherited load penalty: ${loadPenalty} points.`
+    :control.quality === 'targeted'
     ? `${originalStatus} All three mission variants were blocked. ${useful}% of legitimate work remained available.${loadPenalty ? ' Earlier backlog and disruption reduced throughput even after this boundary was repaired.' : ' Verified work continued through the scoped release path.'}`
     : control.quality === 'blanket'
       ? `${originalStatus} The full pause blocked all three mission variants, but only ${useful}% of legitimate work remained available. The review queue grows and service disruption carries into the next mission.`
       : `${originalStatus} The advisory warning failed to contain any mission variant. ${useful}% of legitimate work remained available, but malicious actions also remained possible. Exposure, trust loss, and later review work now compound.`;
-  const lesson = control.quality === 'targeted' ? level.lesson : control.quality === 'blanket'
+  const lesson = projected.note ? `${projected.note} A tactical action does not replace accountable decisions or the complete assurance gate.` :control.quality === 'targeted' ? level.lesson : control.quality === 'blanket'
     ? 'Containment alone is not assurance. A blanket pause can score on blocking while moving harm into unavailable services and an overloaded review queue.'
     : 'An owner and a warning do not enforce a boundary. Governance must change the action path, and replay must demonstrate that the change works.';
   const criteria = [
@@ -771,16 +952,17 @@ export function replay(run) {
     boundary: level.boundary, attack: {...attack}, finding: structuredClone(run.finding),
     control: {...control}, governance: {...run.governance}, result: structuredClone(result), score,
     metricsBefore: {...incoming}, metricsAfter: {...metrics}, evidence: structuredClone(level.evidence),
-    pipeline: 'Evaluate → Govern → Assure → controlled deployment → retest'};
+    pipeline: 'Evaluate → Govern → Assure → controlled deployment → retest',operatorAction:structuredClone(run.operatorAction)};
   return {...run, phase: 'debrief', metrics, result, score: run.score + (passed ? score : 0), history: passed ? [...run.history, entry] : run.history,
     attempts:[...run.attempts.slice(-199),{level:run.level+1,attempt:run.attempt,passed,score,criteria:structuredClone(criteria)}]};
 }
 
 export function nextLevel(run) {
+  run=validateRun(run);
   const level = requirePhase(run, 'debrief');
   if (run.result?.passed !== true) throw new Error('Beat this mission before unlocking the next level. Retry from the checkpoint.');
   if (!run.result || run.history.length !== run.level + 1 || run.history.at(-1)?.id !== level.id) throw new Error('Complete this mission’s replay before continuing.');
   if (run.level === CAMPAIGNS[run.campaignId].levels.length - 1) return {...run, phase: 'completed'};
-  return {...run, level: run.level + 1, phase: 'evaluate', selectedAttack: null, selectedControl: null,
+  return {...run, level: run.level + 1, phase: 'evaluate', selectedAttack: null, selectedControl: null,operatorAction:null,operatorState:{...run.operatorState,used:false},
     finding: null, governance: null, result: null, levelStartMetrics: null, answers: {}, attempt: 1};
 }

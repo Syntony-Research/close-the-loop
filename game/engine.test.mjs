@@ -17,7 +17,7 @@ function answerAll(run) {
 }
 function win(run) { return replay(answerAll(toAssure(run))); }
 function atLevel(campaignId, level) {
-  let run = {...createRun(campaignId), operatorId:'sentinel', operatorName:'Sentinel'};
+  let run = createRun(campaignId,'bastion');
   for (let i = 0; i < level; i++) run = nextLevel(win(run));
   return run;
 }
@@ -81,7 +81,7 @@ test('twenty unique missions introduce the specified progressive decision requir
 
 for (const campaignId of ['atlas','prism']) {
   test(`${campaignId}: all ten correct solves unlock exactly one level and require ten wins to finish`, () => {
-    let run = {...createRun(campaignId),operatorId:'axiom',operatorName:'Axiom'};
+    let run = createRun(campaignId,'aegis');
     for (let i = 0; i < 10; i++) {
       assert.equal(run.level, i);
       assert.equal(run.history.length, i);
@@ -109,8 +109,8 @@ for (const campaignId of ['atlas','prism']) {
     }
     assert.equal(run.score, 1000);
     assert.equal(run.history.length, 10);
-    assert.equal(run.operatorId, 'axiom');
-    assert.equal(run.operatorName, 'Axiom');
+    assert.equal(run.operatorId, 'aegis');
+    assert.equal(run.operatorName, 'Aegis');
     assert.throws(() => nextLevel(run));
     assert.throws(() => retryLevel(run));
   });

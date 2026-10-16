@@ -1,0 +1,146 @@
+/* BLACKLINE / Operator loadouts. Load after the base game stylesheet. */
+.operator-dossier,.operator-console,.operator-result{--op-accent:var(--operator,#77eceb);--op-line:#40565d;--op-muted:#a7bdc2;min-width:0;color:#edf3ec}
+.operator .operator-role{display:block;margin-top:7px;color:#c5d3d3;font:500 12px/1.35 var(--body);letter-spacing:0;white-space:normal}
+.operator .operator-kit-tag{display:block;margin-top:10px;padding-top:8px;border-top:1px solid #6884814d;color:var(--operator,#77eceb);font:500 10px/1.5 var(--mono);letter-spacing:0;white-space:normal;overflow-wrap:anywhere}
+.operator .operator-label small{font-size:9px;line-height:1.45;letter-spacing:.2px;white-space:normal}
+.operator .operator-label{min-height:96px}
+.operator:focus-visible{outline:2px solid var(--operator,#77eceb);outline-offset:3px}
+
+/* Selection dossier: identity is prominent; the kit has its own working area. */
+.operator-dossier{display:grid;grid-template-columns:180px minmax(0,1.1fr) minmax(0,1fr);gap:0;margin-top:24px;border:1px solid var(--op-line);border-top:2px solid var(--op-accent);background:linear-gradient(130deg,#17272e,#0c171d 70%);box-shadow:0 18px 42px #0003;position:relative}
+.dossier-portrait{align-self:stretch;min-width:0;position:relative;overflow:hidden;background:#0a1419;border-right:1px solid var(--op-line)}
+.dossier-portrait.operator-portrait{aspect-ratio:1;align-self:center;border:0;min-height:0}
+.dossier-portrait>.operator-portrait{width:100%;aspect-ratio:1;position:sticky;top:0}
+.dossier-portrait:after{content:'';position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 -22px 35px #09121966,inset 0 0 0 1px #d9efef12}
+.dossier-main{padding:27px 30px;min-width:0;align-self:center}
+.dossier-main .operator-role{font:500 11px/1.65 var(--mono);letter-spacing:1.1px;text-transform:uppercase;color:var(--op-accent)}
+.dossier-main h3{font:700 clamp(36px,3.4vw,54px)/.98 var(--display);letter-spacing:.3px;margin:10px 0 14px;text-transform:uppercase}
+.dossier-main h3 span{display:block;margin-top:8px;font:400 11px/1.5 var(--mono);letter-spacing:.7px;color:#b9c9c9}
+.dossier-main p{font:400 15px/1.7 var(--body);color:#bdcece;margin:0;max-width:560px}
+.dossier-statline{display:flex;flex-wrap:wrap;gap:8px 16px;margin-top:18px;font:500 11px/1.6 var(--mono);color:var(--op-accent)}
+.dossier-kit{padding:26px 28px;background:#06101677;border-left:1px solid var(--op-line);min-width:0;display:flex;flex-direction:column;justify-content:center}
+.kit-stage{font:500 10px/1.6 var(--mono);color:var(--op-accent);letter-spacing:1.2px;text-transform:uppercase}
+.dossier-kit h4{font:600 27px/1.1 var(--display);letter-spacing:.3px;margin:10px 0;color:#f0f4e9}
+.dossier-kit p{font:400 14px/1.65 var(--body);color:#bfcece;margin:0 0 12px}
+.dossier-kit .kit-tradeoff{font:400 12px/1.65 var(--body);color:#b7c3b8;border-top:1px solid #68848142;padding-top:12px;margin:0}
+.kit-tradeoff strong,.kit-tradeoff b{color:#e2d6a6;font-weight:600}
+.kit-charges{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:15px;font:500 11px/1.5 var(--mono);color:var(--op-accent)}
+
+/* Mission console: capability, resource cost, interaction, then activation. */
+.operator-console{container:operator-panel / inline-size;position:relative;margin:22px 0;border:1px solid var(--op-line);border-top:2px solid var(--op-accent);background:radial-gradient(ellipse at 100% 0,#35586133,transparent 65%),#0c171d;box-shadow:0 10px 24px #0002;isolation:isolate}
+.op-console-head{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;padding:20px 22px;border-bottom:1px solid #627b7d42;background:#1a2a304d}
+.op-identity{display:flex;align-items:center;gap:14px;min-width:0;flex:1 1 190px}
+.op-identity .operator-portrait{width:58px;height:58px;aspect-ratio:1;flex:none;border:1px solid var(--op-accent);filter:saturate(.9)}
+.op-title{min-width:0}
+.op-title h3,.op-title h4{font:600 26px/1.08 var(--display);margin:4px 0;color:#f0f5ed;letter-spacing:.3px}
+.op-title p,.op-title small,.op-title .micro{display:block;margin:0;font:500 10px/1.6 var(--mono);letter-spacing:.7px;color:var(--op-accent);overflow-wrap:anywhere}
+.op-title strong{font-weight:600}
+.op-console-meta{display:flex;flex-direction:column;align-items:flex-end;gap:9px}
+.op-charge-bank{display:flex;flex-wrap:wrap;align-items:center;gap:5px;color:#a8bcc0;font:500 10px/1.5 var(--mono)}
+.op-charge-bank>span{display:block;min-width:12px;min-height:21px;padding:2px 4px;border:1px solid #4b6269;background:#091117;color:#81979c}
+.op-charge-bank>span.charged{border-color:var(--op-accent);background:var(--op-accent);color:#081418;box-shadow:0 0 12px #b9fff018}
+.op-status{display:inline-flex;align-items:center;gap:7px;max-width:100%;padding:6px 9px;border:1px solid #718b8d66;background:#09161c;color:var(--op-accent);font:500 10px/1.45 var(--mono);letter-spacing:.4px;text-transform:uppercase}
+.op-console-copy{padding:18px 22px 0;font:400 14px/1.7 var(--body);color:#c1d0d1;overflow-wrap:anywhere}
+.op-console-copy p{margin:0 0 10px}
+.op-console-copy strong{color:#edf3e8;font-weight:600}
+.op-action-body{padding:16px 22px 22px;min-width:0}
+.op-action-body>p{font:400 14px/1.65 var(--body);color:#b6cacc;margin:0 0 15px}
+.op-action-body button,.op-activate{min-height:44px;touch-action:manipulation}
+.op-action-body button:focus-visible,.op-activate:focus-visible{outline:2px solid var(--op-accent);outline-offset:3px}
+.op-activate{display:flex;align-items:center;justify-content:space-between;gap:16px;width:100%;padding:16px 20px;border:1px solid var(--op-accent);background:var(--op-accent);color:#08151a;font:600 12px/1.5 var(--mono);letter-spacing:.3px;text-align:left;transition:background .18s,box-shadow .18s;overflow-wrap:anywhere}
+.op-activate:hover:not(:disabled){background:#edf9e6;box-shadow:0 0 24px #b9fff01c}
+.op-activate:disabled{opacity:1;background:#18292f;color:#92a5aa;border-color:#3b535a;cursor:not-allowed}
+.op-action-body .op-activate{margin-top:18px}
+.operator-console>.op-activate{width:calc(100% - 44px);margin:0 22px 20px}
+.op-availability{font:400 12px/1.65 var(--body);color:#a9bfc1;margin:12px 0 0;overflow-wrap:anywhere}
+.operator-console>.op-availability{margin:0;padding:0 22px 20px}
+
+/* Gate placement and routing are spatial choices, not another prose menu. */
+.wire-path{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;position:relative;margin:6px 0 18px;isolation:isolate}
+.wire-path:before{content:'';position:absolute;left:10%;right:10%;top:50%;height:2px;background:var(--op-line);z-index:-1}
+.wire-node{min-width:0;position:relative;padding:16px 10px;border:1px solid #49636b;background:#101f26;color:#bdced1;font:500 12px/1.45 var(--body);text-align:center;transition:border-color .18s,background .18s;overflow-wrap:anywhere}
+.wire-node strong,.wire-node b{display:block;font:600 21px/1.1 var(--display);color:#edf2e9;margin-bottom:7px}
+.wire-node small{display:block;margin-top:6px;font:400 10px/1.5 var(--mono);color:#a3bbbe}
+.wire-node.selected{border-color:var(--op-accent);box-shadow:inset 0 -3px 0 var(--op-accent);background:#23393c;color:#f0f8eb}
+.wire-node.selected small{color:var(--op-accent)}
+.wire-node:hover:not(:disabled){border-color:var(--op-accent);background:#1b3037}
+.routing-board{display:grid;border:1px solid #3e5962;background:#071218}
+.routing-row{display:grid;grid-template-columns:minmax(105px,.8fr) minmax(0,1.5fr);align-items:center;gap:15px;padding:15px}
+.routing-row+.routing-row{border-top:1px solid #3e596266}
+.route-label{font:500 13px/1.5 var(--body);color:#d3dfdc;min-width:0;overflow-wrap:anywhere}
+.route-label small{display:block;margin-top:4px;font:400 10px/1.5 var(--mono);color:#a5b9be}
+.route-options{display:flex;flex-wrap:wrap;gap:6px;min-width:0}
+.route-options button{flex:1 1 65px;padding:10px 8px;border:1px solid #3d5962;background:#112129;color:#bcd0d3;font:500 11px/1.45 var(--mono);transition:border-color .18s,background .18s;overflow-wrap:anywhere}
+.route-options button:hover:not(:disabled){border-color:#9ec4c5;background:#1b3038}
+.route-options button.selected{background:var(--op-accent);border-color:var(--op-accent);color:#08151a}
+
+/* Reports retain the visual language of evidence, with readable working text. */
+.tactical-report{margin:18px 0 0;padding:20px;border:1px solid #577775;border-left:3px solid var(--op-accent,var(--operator,#77eceb));background:linear-gradient(110deg,#172d30,#0a171d);color:#d2dfdc;overflow-wrap:anywhere}
+.tactical-report>header{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;padding:0 0 13px;margin:0 0 14px;border-bottom:1px solid #68848142;background:none}
+.tactical-report h4{font:600 26px/1.12 var(--display);color:#f0f5e9;margin:0 0 10px}
+.tactical-report header h4{margin:0}
+.tactical-report p{font:400 14px/1.7 var(--body);margin:10px 0;color:#bdced0}
+.report-label,.tactical-report header small{font:500 10px/1.6 var(--mono);letter-spacing:.8px;color:var(--op-accent,var(--operator,#77eceb));text-transform:uppercase}
+.report-lines{list-style:none;margin:14px 0 0;padding:0;display:grid;gap:0}
+.report-lines li{padding:11px 0;border-top:1px solid #68848133;font:400 13px/1.7 var(--body);color:#c7d8d7}
+.report-lines li strong{color:#eef3e8;font-weight:600}
+.tactical-checks{display:grid;gap:8px;list-style:none;padding:0;margin:16px 0 0}
+.tactical-checks>div,.tactical-checks>li,.tactical-checks>.pass,.tactical-checks>.fail{padding:12px 14px;border:1px solid #4d666d;border-left-width:3px;background:#0a171c;font:500 13px/1.6 var(--body);color:#d2dfdc}
+.tactical-checks .pass{border-left-color:#8ce2bb;color:#c8f0d9}
+.tactical-checks .fail{border-left-color:#ff9a8b;color:#ffd0c7;background:#341c1b55}
+.tactical-checks small{display:block;font:400 12px/1.6 var(--body);color:#b1c6c8;margin-top:5px}
+.fork-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:17px}
+.fork-card{min-width:0;padding:16px 13px;border:1px solid #48646d;background:#09171d}
+.fork-card h4,.fork-card h5{font:600 21px/1.15 var(--display);margin:0 0 13px;color:#edf4e9}
+.fork-card p{font-size:12px;line-height:1.65;margin:9px 0}
+.fork-card.selected{border-color:var(--op-accent,var(--operator,#77eceb));box-shadow:inset 0 2px var(--op-accent,var(--operator,#77eceb))}
+.fork-metric{display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:5px 10px;padding:9px 0;border-top:1px solid #68848133;font:400 11px/1.5 var(--body);color:#b4c9c9}
+.fork-metric strong,.fork-metric b{font:600 23px/1 var(--display);color:var(--op-accent,var(--operator,#77eceb))}
+
+/* Persistent mission feedback and the operator's actual contribution. */
+.mission-signal{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px 20px;margin:0 0 20px;padding:13px 17px;background:#09171d;border:1px solid #48616a;border-left:3px solid var(--operator,var(--cyan));color:#c5d9d7}
+.mission-signal>header,.mission-signal>label{font:500 11px/1.5 var(--mono);color:var(--operator,var(--cyan));letter-spacing:.4px}
+.mission-signal small{font:400 11px/1.5 var(--body);color:#b3c9c9}
+.mission-signal-track{width:100%;height:4px;background:#263b44;overflow:hidden}
+.mission-signal-track>span{display:block;height:100%;width:var(--progress,0%);background:var(--operator,var(--cyan));transition:width .3s ease}
+.operator-result{margin:22px 0;padding:21px 22px;border:1px solid #4a676c;border-top:2px solid var(--op-accent);background:linear-gradient(110deg,#1c3338,#0b171e)}
+.operator-result-title,.operator-result h3{font:600 27px/1.15 var(--display);color:#edf4e9;margin:0 0 11px}
+.operator-result p{font:400 14px/1.7 var(--body);color:#bfd0cf;margin:7px 0}
+.operator-result small{display:block;font:400 11px/1.6 var(--mono);color:var(--op-accent);margin-top:12px}
+.tactical-flash{animation:operator-activate .6s ease-out both}
+@keyframes operator-activate{from{transform:translateY(3px);box-shadow:0 10px 28px #b8f6e514}to{transform:translateY(0);box-shadow:0 0 0 transparent}}
+
+@container operator-panel (max-width:480px){
+  .op-console-head{padding:17px;gap:12px}.op-identity{gap:11px}.op-identity .operator-portrait{width:48px;height:48px}.op-title h3,.op-title h4{font-size:24px}.op-console-meta{align-items:flex-start}
+  .op-console-copy{padding:16px 17px 0}.op-action-body{padding:14px 17px 17px}.routing-row{grid-template-columns:1fr;gap:10px;padding:13px}.fork-grid{grid-template-columns:1fr}.fork-card{padding:15px}.fork-metric{font-size:12px}.wire-path{gap:9px}.wire-node{padding:14px 7px}
+  .tactical-report{padding:16px}.operator-console>.op-activate{width:calc(100% - 34px);margin-left:17px;margin-right:17px}.operator-console>.op-availability{padding-left:17px;padding-right:17px}
+}
+@media(max-width:1150px){.operator-dossier{grid-template-columns:150px minmax(0,1fr) minmax(0,1fr)}.dossier-main{padding:24px}.dossier-kit{padding:23px}.operator .operator-label{padding:12px 9px}.operator .operator-label small{font-size:9px}}
+@media(max-width:800px){.operator-dossier{grid-template-columns:150px minmax(0,1fr)}.dossier-kit{grid-column:1/-1;border-left:0;border-top:1px solid var(--op-line);display:block;padding:23px 25px}.dossier-main h3{font-size:41px}.dossier-main p{font-size:14px}.dossier-kit .kit-tradeoff{margin-top:13px}}
+@media(max-width:600px){
+  .operator-dossier{grid-template-columns:108px minmax(0,1fr);margin-top:20px}.dossier-main{padding:20px 17px}.dossier-main h3{font-size:34px;margin:8px 0 11px}.dossier-main .operator-role{font-size:10px;letter-spacing:.5px}.dossier-main h3 span{font-size:10px}.dossier-main p{font-size:13px;line-height:1.65}.dossier-kit{padding:20px}.dossier-kit h4{font-size:27px}.dossier-portrait{background-position:var(--px) var(--py)}.dossier-statline{font-size:10px;gap:6px 10px}
+  .operator .operator-label{padding:11px 9px;min-height:111px}.operator .operator-role{font-size:12px}.operator .operator-kit-tag{font-size:10px;line-height:1.4}.operator .operator-label small{font-size:9px}
+  .operator-console{margin:19px 0}.routing-row{grid-template-columns:1fr}.fork-grid{grid-template-columns:1fr}.op-activate{font-size:11px;padding:15px 16px}.operator-result{padding:18px}.mission-signal{padding:12px 14px;gap:8px}
+}
+@media(max-width:380px){.operator-dossier{grid-template-columns:90px minmax(0,1fr)}.dossier-main{padding:18px 14px}.operator .operator-label strong{font-size:21px}.wire-node strong,.wire-node b{font-size:19px}}
+@media(prefers-reduced-motion:reduce){.tactical-flash{animation:none}.op-activate,.wire-node,.route-options button,.mission-signal-track>span{transition:none}}
+
+/* Match the live console's semantic markup and retain spacing at narrow widths. */
+.dossier-portrait>span{display:block;padding:12px;text-align:center;font:500 10px/1.5 var(--mono);color:var(--op-accent)}
+.dossier-main>small{display:block;margin-top:17px;font:500 10px/1.6 var(--mono);color:var(--op-accent)}
+.op-title>span,.tactical-report header>span,.operator-result>div>span,.mission-signal>span{font:500 10px/1.6 var(--mono);letter-spacing:.5px;text-transform:uppercase;color:var(--op-accent,#a7c9c8)}
+.operator-console>.wire-path,.operator-console>.routing-board{margin:20px 22px 0}
+.wire-path{padding:14px 0 0;border:0}.wire-path legend{font:500 12px/1.6 var(--body);color:#c5d7d6}
+.wire-node,.route-options button{min-height:44px}.wire-node:disabled,.route-options button:disabled{opacity:.55;cursor:not-allowed}
+.wire-node:focus-visible,.route-options button:focus-visible{outline:2px solid var(--op-accent);outline-offset:3px}
+.operator-console>.kit-tradeoff,.operator-console>.op-target{margin:0;padding:0 22px 22px;font:400 12px/1.65 var(--body);color:#b4c8c8}
+.operator-console>.op-target{padding-top:15px}
+.op-action-body>.op-availability{margin:12px 0 0;font-size:12px}
+.report-lines>.tactical-check{padding:14px 0;border-top:1px solid #68848133}.tactical-check h4{font-size:21px}.tactical-check>strong{font:600 13px/1.6 var(--mono);color:var(--op-accent)}
+.report-lines>.tactical-check.pass,.report-lines>.tactical-check.fail{margin-top:9px;padding:14px;border:1px solid #4d666d;border-left:3px solid #8ce2bb;background:#0a171c}
+.report-lines>.tactical-check.fail{border-left-color:#ff9a8b;background:#341c1b55}.tactical-check.fail>strong{color:#ffb8a8}
+.fork-card>strong.fork-metric{font:600 14px/1.6 var(--mono);color:var(--op-accent)}
+.operator-result .op-charge-bank{margin-top:16px}.mission-signal-track{order:3}
+@container operator-panel (max-width:480px){.operator-console>.wire-path,.operator-console>.routing-board{margin:18px 17px 0}.wire-node b{font-size:17px}.operator-console>.kit-tradeoff,.operator-console>.op-target{padding-left:17px;padding-right:17px}}
+
+.tactical-amendment{margin:18px 0;padding:18px 20px;border-left:3px solid #a4e3bd;background:#163032;color:#c8dfdb}.tactical-amendment b{font:500 11px/1.6 var(--mono);color:#b9edd2}.tactical-amendment p{margin:10px 0 0;font:400 14px/1.7 var(--body)}

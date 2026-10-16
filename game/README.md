@@ -2,9 +2,29 @@
 
 [Play BLACKLINE on Syntony Research](https://www.syntonyresearch.ai/challenge/)
 
-BLACKLINE is a browser game about AI security, governance, and assurance. Nine original operators can play either of two ten-level campaigns. Levels unlock through demonstrated mission objectives; findings, controls, decisions, and system consequences form a downloadable evidence record.
+BLACKLINE is a browser game about AI security, governance, and assurance. Nine original operators can play either of two ten-level campaigns. Each has a distinct tactical role, limited-use signature tool, and recorded consequences. Levels unlock through demonstrated mission objectives; findings, controls, decisions, and system consequences form a downloadable evidence record.
 
 The characters and scenarios are fictional. The game engine simulates outcomes locally. It does not evaluate a real model, invoke a model API, execute financial transactions, or operate government systems.
+
+## Nine operators, nine ways to intervene
+
+Choose an operator at the start of either campaign. That choice stays bound to the run. Each operator has **three tactical charges per ten-level campaign**, at most one activation per attempt. Charges survive saving and are never refunded by retrying. Every mission is still beatable with standard tools after charges run out.
+
+| Operator | Signature tool | What changes in play |
+| --- | --- | --- |
+| Cipher — boundary engineer | WIRECUT · Govern | Place a gate on the source, advice, or action edge. An action gate can make an advisory control contain the attack; cutting source intake sacrifices continuity. |
+| Aegis — readiness auditor | PREFLIGHT · Assure | Inspect reproduction, containment, continuity, and decision gaps before replay. The scan does not fill in answers. |
+| Trace — recovery navigator | RETRACE · Govern | Rewind evaluation and test a different attack without completing a failed loop. The prior finding is replaced. |
+| Relay — workflow router | EXPRESS LANE · Govern | Route verified and disputed work separately. A safe bypass can preserve continuity under a blanket hold; a bad route can lose containment. |
+| Null — sandbox analyst | SANDBOX · Evaluate | Preview one selected attack and its trace without recording a finding or changing system metrics. |
+| Bastion — recovery sentinel | SECOND LINE · Failed replay | Keep a reproduced finding and return to governance to repair a failed response. Controls and decision answers must be chosen again. |
+| Sigil — policy interpreter | DECODE · Govern | Exclude the cosmetic response and expose its missing enforcement. The remaining containment/continuity choice is still yours. |
+| Glitch — adversarial disruptor | OVERDRIVE · Evaluate | Boost consensus attacks by 22 effectiveness, at a cost of 6 exposure and 4 review backlog. Other attack types receive no boost. |
+| Root — control forecaster | FORK · Govern | Compare projected containment, useful work, and system consequences for all three controls without committing one. |
+
+Tactics never bypass the Close the Loop gates. Reproduce the consequential failure, contain the original and all three variants, retain at least 80% useful work, and solve every required decision check. Operator actions, inputs, charges, and reports travel with the evidence record. Cipher and Relay’s alternate control paths have an 88% baseline useful capacity before inherited load; they are different strategic choices, not automatic perfect scores.
+
+Existing version-2 saves migrate to the previously selected operator with three charges. New saves keep their bound operator even if another character is selected on the roster later. Local scores remain nonauthoritative simulation data.
 
 ## From the simulation to a real system
 
@@ -47,12 +67,14 @@ The existing Agent Arena toolkit has its own tests and replay commands in the [r
 | `dist/index.html` | Game entry point |
 | `dist/app.js` | Interface, progression, browser persistence, and evidence export |
 | `dist/engine.js` | Campaigns, mission rules, scoring, and level gates |
+| `dist/operators.js` | Immutable character identities and tactical kit metadata |
+| `dist/operator-ui.js`, `dist/operators.css` | Operator dossiers, tactical inputs, charge meters, and reports |
 | `dist/mission-context.js` | Human and institutional stakes for all 20 missions |
 | `dist/syntony.js`, `dist/syntony.css` | Services, product links, real-workflow handoffs, and presentation |
 | `dist/assets/` | Static game artwork and supporting assets |
 | `dist/auth.mjs` | Hosted sign-in client, when included in the release |
 | `dist/auth-config.mjs` | The deployment's public authentication service address |
-| `engine.test.mjs`, `saved-state.test.mjs` | Game engine and saved-progress regression tests |
+| `*.test.mjs` | Mission gates, nine tactical kits across both campaigns, safe saves, and UI state regressions |
 | `dist/saved-state.mjs` | Bounded validation and recovery of browser saves |
 | `preview.mjs` | Dependency-free local HTTP preview |
 

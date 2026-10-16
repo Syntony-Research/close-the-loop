@@ -1,4 +1,4 @@
-import {validateRun} from './engine.js?v=blackline-5';
+import {validateRun} from './engine.js?v=operators-1';
 
 // Stored game state is untrusted input, including when another same-origin page
 // or an older release wrote it. Never render the raw storage object.
@@ -16,9 +16,11 @@ export function readSavedState(raw, operators) {
     try {
       const record = input[campaignId];
       if (!record || typeof record !== 'object' || Array.isArray(record)) throw new Error('Invalid save record');
-      const run = validateRun(record.run);
+      const fallbackId=operators.includes(record.modelId)?record.modelId:saved.modelId;
+      const inputRun=record.run&&typeof record.run==='object'&&!Object.hasOwn(record.run,'operatorId')?{...record.run,operatorId:fallbackId}:record.run;
+      const run = validateRun(inputRun);
       if (run.campaignId !== campaignId) throw new Error('Mismatched campaign');
-      saved[campaignId] = {run, modelId:operators.includes(record.modelId) ? record.modelId : saved.modelId};
+      saved[campaignId] = {run, modelId:operators.includes(run.operatorId)?run.operatorId:fallbackId};
     } catch { rejected.push(campaignId); }
   }
   return {saved, rejected};

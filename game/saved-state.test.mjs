@@ -25,7 +25,7 @@ test('invalid saved HTML and prototype-shaped data never reach a resume card',()
   }
 });
 test('corrupt stream recovery preserves the other valid campaign',()=>{
-  const valid=createRun('prism');
+  const valid=createRun('prism','aegis');
   const result=readSavedState(JSON.stringify({atlas:{run:{version:2}},prism:{run:valid,modelId:'aegis'}}),operators);
   assert.deepEqual(result.rejected,['atlas']);assert.equal(result.saved.prism.run.campaignId,'prism');
   assert.equal(result.saved.prism.modelId,'aegis');
@@ -37,4 +37,14 @@ test('malformed, oversized and mismatched save envelopes recover safely',()=>{
   const mismatch=readSavedState(JSON.stringify({atlas:{run:createRun('prism')}}),operators);
   assert.equal(mismatch.saved.atlas,undefined);assert.deepEqual(mismatch.rejected,['atlas']);
   assert.deepEqual(readSavedState(null,operators).rejected,[]);
+});
+
+ test('legacy campaigns keep their selected operator and new campaigns keep their bound operator',()=>{
+  const legacy=createRun('atlas');delete legacy.operatorId;delete legacy.operatorState;delete legacy.operatorAction;
+  const migrated=readSavedState(JSON.stringify({atlas:{run:legacy,modelId:'aegis'}}),operators);
+  assert.equal(migrated.saved.atlas.run.operatorId,'aegis');
+  assert.equal(migrated.saved.atlas.run.operatorState.remaining,3);
+  const current=readSavedState(JSON.stringify({atlas:{run:createRun('atlas','cipher'),modelId:'aegis'}}),operators);
+  assert.equal(current.saved.atlas.modelId,'cipher');
+  assert.equal(current.saved.atlas.run.operatorId,'cipher');
 });

@@ -4,6 +4,8 @@ import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
 import * as engine from './dist/engine.js';
 import {readSavedState} from './dist/saved-state.mjs';
+import {OPERATORS,getOperator} from './dist/operators.js';
+import {renderOperatorDossier,renderOperatorConsole,renderOperatorResult} from './dist/operator-ui.js';
 
 // Run the actual application handlers with small DOM/auth adapters. Storage
 // failure and auth expiry can therefore exercise the save-to-redirect boundary.
@@ -13,26 +15,36 @@ function application({stored=null,failWrites=false}={}){
   function element(selector){
     if(!elements.has(selector)){
       const node=new EventTarget();
-      Object.assign(node,{innerHTML:'',textContent:'',open:false,style:{},classList:{toggle(){}},
+      Object.assign(node,{innerHTML:'',textContent:'',open:false,style:{},classList:{toggle(){},add(){},remove(){}},
         setAttribute(){},removeAttribute(){},querySelector(){return null;},getContext(){return null;},
-        showModal(){this.open=true;},close(){this.open=false;}});
+        focus(){},scrollIntoView(){},showModal(){this.open=true;},close(){this.open=false;}});
       elements.set(selector,node);
     }
     return elements.get(selector);
   }
   const document=new EventTarget();
   Object.assign(document,{querySelector:element,body:element('body')});
+  const listeners=new Map(),addListener=document.addEventListener.bind(document);
+  document.addEventListener=(type,listener,options)=>{listeners.set(type,[...(listeners.get(type)||[]),listener]);addListener(type,listener,options);};
   const storage={value:stored,failWrites,getItem(){return this.value;},setItem(key,value){
     if(this.failWrites)throw new Error('QuotaExceededError');
     this.value=value;
   }};
-  const auth={canPractice:true,subscribe(listener){this.listener=listener;listener({authenticated:false});},init(){}};
-  const context=vm.createContext({...engine,readSavedState,document,localStorage:storage,arenaAuth:auth,
+  const auth={canPractice:true,require(){return this.canPractice;},subscribe(listener){this.listener=listener;listener({authenticated:false});},init(){}};
+  const context=vm.createContext({...engine,OPERATORS,getOperator,renderOperatorDossier,renderOperatorConsole,renderOperatorResult,readSavedState,document,localStorage:storage,arenaAuth:auth,
+    // App and ESM execute in different realms only in this harness. Transfer
+    // plain options to the engine realm so its prototype checks stay meaningful.
+    useOperatorAbility:(run,options)=>engine.useOperatorAbility(run,structuredClone(options)),
     mountAuthPanel(){},renderSyntony(){return '';},renderMissionContext(){return '';},
     renderRealWorldDebrief(){return '';},renderPracticeNote(){return '';},renderAssuranceQuestion(){return '';},
-    console,setTimeout,clearTimeout,window:{scrollTo(){},scrollY:0}});
+    console,setTimeout,clearTimeout,CSS:{escape:value=>String(value)},window:{scrollTo(){},scrollY:0}});
   vm.runInContext(source,context,{filename:'app.js'});
-  return {storage,auth,element,read:code=>vm.runInContext(code,context),signIn(){
+  return {storage,auth,element,read:code=>vm.runInContext(code,context),async click(action,data={}){
+    const button={dataset:{action,...data}};
+    for(const listener of listeners.get('click')||[])await listener({target:{closest:()=>button}});
+  },input(id,value){
+    for(const listener of listeners.get('input')||[])listener({target:{id,value}});
+  },signIn(){
     const event=new Event('syntony:before-signin',{cancelable:true});
     return {allowed:document.dispatchEvent(event),event};
   }};
@@ -129,4 +141,85 @@ test('authored evidence retains only the latest 200 entries',()=>{
   assert.equal(app.read('workbench.journal.length'),200);
   assert.equal(app.read('workbench.journal[0].index'),800);
   assert.equal(app.read('workbench.journal.at(-1).index'),999);
+});
+
+test('resuming a campaign uses its bound operator despite later roster selection or stale save wrapper',async()=>{
+  const app=application();
+  app.read('modelId="relay"');await app.read('start("atlas")');
+  app.read('modelId="null"');await app.read('start("prism")');
+  app.read('saved.atlas.modelId="glitch";modelId="root";resume("atlas")');
+  assert.equal(app.read('run.operatorId'),'relay');assert.equal(app.read('modelId'),'relay');assert.equal(app.read('character().id'),'relay');
+  assert.match(app.element('#app').innerHTML,/EXPRESS LANE/);
+  app.read('resume("prism")');
+  assert.equal(app.read('run.operatorId'),'null');assert.equal(app.read('character().id'),'null');
+  assert.match(app.element('#app').innerHTML,/SANDBOX/);
+});
+
+test('tactical inputs reach the ability and persist its charge and report through reload',async()=>{
+  const app=application();await app.read('start("atlas")');
+  app.read('run=evaluateAttack(run,"l1-provenance");render()');
+  await app.click('tactic-pick',{key:'edge',value:'action'});
+  assert.equal(app.read('tacticDraft.edge'),'action');
+  assert.match(app.element('#app').innerHTML,/data-key="edge" data-value="action" aria-pressed="true"/);
+  await app.click('operator-ability');
+  assert.equal(app.read('run.operatorAction.options.edge'),'action');
+  assert.equal(app.read('run.operatorState.remaining'),2);
+  assert.match(app.element('#announcer').textContent,/WIRECUT activated\. 2 tactical charges remain/);
+  const restored=application({stored:app.storage.value});restored.read('resume("atlas")');
+  assert.equal(restored.read('run.operatorState.remaining'),2);
+  assert.equal(restored.read('run.operatorState.used'),true);
+  assert.match(restored.element('#app').innerHTML,/TACTIC COMMITTED/);
+  assert.doesNotMatch(restored.element('#app').innerHTML,/data-action="operator-ability"/);
+});
+
+test('Relay keeps both queue choices and Null previews the selected attack without consuming its authored draft',async()=>{
+  const relay=application();relay.read('modelId="relay"');await relay.read('start("atlas")');
+  relay.read('run=evaluateAttack(run,"l1-provenance")');
+  await relay.click('tactic-pick',{key:'verified',value:'run'});
+  await relay.click('tactic-pick',{key:'contested',value:'review'});
+  await relay.click('operator-ability');
+  assert.equal(relay.read('run.operatorAction.options.verified'),'run');
+  assert.equal(relay.read('run.operatorAction.options.contested'),'review');
+  assert.equal(relay.read('run.phase'),'govern');
+  const sandbox=application();sandbox.read('modelId="null"');await sandbox.read('start("prism")');
+  await sandbox.click('attack',{id:'l1-provenance'});
+  sandbox.input('attack-payload','My fictional submission claims permission without the original authority.');
+  const before=sandbox.read('JSON.stringify(run.metrics)');
+  await sandbox.click('operator-ability');
+  assert.equal(sandbox.read('run.operatorAction.options.attackId'),'l1-provenance');
+  assert.equal(sandbox.read('run.phase'),'evaluate');assert.equal(sandbox.read('run.finding'),undefined);
+  assert.equal(sandbox.read('JSON.stringify(run.metrics)'),before);
+  assert.equal(sandbox.read('attackDraft'),'l1-provenance');
+  assert.equal(sandbox.read('attackDraftText'),'My fictional submission claims permission without the original authority.');
+});
+
+test('Trace phase recovery clears stale drafts but retains authored evidence and spent charge',async()=>{
+  const app=application();app.read('modelId="trace"');await app.read('start("atlas")');
+  await app.click('attack',{id:'l1-noise'});await app.click('evaluate');
+  app.read('controlDraft="l1-cosmetic"');await app.click('operator-ability');
+  assert.equal(app.read('run.phase'),'evaluate');assert.equal(app.read('attackDraft'),null);
+  assert.equal(app.read('attackDraftText'),'');assert.equal(app.read('controlDraft'),null);
+  assert.equal(app.read('Object.keys(tacticDraft).length'),0);
+  assert.equal(app.read('run.operatorState.remaining'),2);assert.equal(app.read('workbench.journal.length'),1);
+});
+
+test('Sigil activation removes a preselected cosmetic control and disables its rendered choice',async()=>{
+  const app=application();app.read('modelId="sigil"');await app.read('start("atlas")');
+  app.read('run=evaluateAttack(run,"l1-provenance")');
+  await app.click('control',{id:'l1-cosmetic'});assert.equal(app.read('controlDraft'),'l1-cosmetic');
+  await app.click('operator-ability');
+  assert.equal(app.read('controlDraft'),null);assert.equal(app.read('run.operatorAction.excludedControlId'),'l1-cosmetic');
+  const html=app.element('#app').innerHTML;
+  assert.match(html,/<button[^>]*data-action="control"[^>]*data-id="l1-cosmetic"[^>]*\bdisabled\b/);
+  assert.match(html,/<button[^>]*data-action="govern"[^>]*\bdisabled\b/);
+  await app.click('control',{id:'l1-targeted'});await app.click('govern');
+  assert.equal(app.read('run.phase'),'assure');
+});
+
+test('auth gating blocks tactic selection and activation without consuming a charge',async()=>{
+  const app=application();await app.read('start("atlas")');
+  app.read('run=evaluateAttack(run,"l1-provenance")');app.auth.canPractice=false;
+  await app.click('tactic-pick',{key:'edge',value:'action'});await app.click('operator-ability');
+  assert.equal(app.read('Object.keys(tacticDraft).length'),0);
+  assert.equal(app.read('run.operatorState.remaining'),3);assert.equal(app.read('run.operatorAction'),null);
 });
