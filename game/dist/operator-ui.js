@@ -36,7 +36,7 @@ export function renderOperatorConsole(run,{attackId=null,options={},busy=false}=
     body=`<div class="routing-board" aria-label="Allocate the work queues">${[['verified','VERIFIED WORK'],['contested','DISPUTED ACTIONS']].map(([key,label])=>`<div class="routing-row"><span class="route-label">${label}</span><div class="route-options" role="group" aria-label="${label}">${[['run','EXECUTE'],['review','REVIEW'],['hold','HOLD']].map(([value,title])=>`<button data-action="tactic-pick" data-key="${key}" data-value="${value}" aria-pressed="${picked[key]===value}" class="${picked[key]===value?'selected':''}" ${locked?'disabled':''}>${title}</button>`).join('')}</div></div>`).join('')}</div>`;
     needsInput=!picked.verified||!picked.contested;
   }else if(operator.id==='null'&&!used){
-    body=`<p class="op-target">${attackId?'Selected attack ready for an isolated preview.':'Select an attack route below to load the sandbox.'}</p>`;
+    body=`<p class="op-target">${attackId?'Selected attack ready for an isolated preview.':'Select an attack route to load the sandbox.'}</p>`;
     needsInput=!attackId;
   }
   const reason=used?'TACTIC COMMITTED':status.available?'TOOL READY':status.reason;

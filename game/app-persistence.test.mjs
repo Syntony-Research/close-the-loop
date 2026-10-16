@@ -6,6 +6,7 @@ import * as engine from './dist/engine.js';
 import {readSavedState} from './dist/saved-state.mjs';
 import {OPERATORS,getOperator} from './dist/operators.js';
 import {renderOperatorDossier,renderOperatorConsole,renderOperatorResult} from './dist/operator-ui.js';
+import {renderWorkbench} from './dist/workbench-ui.js';
 
 // Run the actual application handlers with small DOM/auth adapters. Storage
 // failure and auth expiry can therefore exercise the save-to-redirect boundary.
@@ -31,15 +32,16 @@ function application({stored=null,failWrites=false}={}){
     this.value=value;
   }};
   const auth={canPractice:true,require(){return this.canPractice;},subscribe(listener){this.listener=listener;listener({authenticated:false});},init(){}};
-  const context=vm.createContext({...engine,OPERATORS,getOperator,renderOperatorDossier,renderOperatorConsole,renderOperatorResult,readSavedState,document,localStorage:storage,arenaAuth:auth,
+  const errors=[];
+  const context=vm.createContext({...engine,OPERATORS,getOperator,renderWorkbench,renderOperatorDossier,renderOperatorConsole,renderOperatorResult,readSavedState,document,localStorage:storage,arenaAuth:auth,
     // App and ESM execute in different realms only in this harness. Transfer
     // plain options to the engine realm so its prototype checks stay meaningful.
     useOperatorAbility:(run,options)=>engine.useOperatorAbility(run,structuredClone(options)),
     mountAuthPanel(){},renderSyntony(){return '';},renderMissionContext(){return '';},
     renderRealWorldDebrief(){return '';},renderPracticeNote(){return '';},renderAssuranceQuestion(){return '';},
-    console,setTimeout,clearTimeout,CSS:{escape:value=>String(value)},window:{scrollTo(){},scrollY:0}});
+    console:{...console,error(error){errors.push(error);}},structuredClone,setTimeout,clearTimeout,CSS:{escape:value=>String(value)},window:{scrollTo(){},scrollY:0}});
   vm.runInContext(source,context,{filename:'app.js'});
-  return {storage,auth,element,read:code=>vm.runInContext(code,context),async click(action,data={}){
+  return {storage,auth,element,errors,read:code=>vm.runInContext(code,context),async click(action,data={}){
     const button={dataset:{action,...data}};
     for(const listener of listeners.get('click')||[])await listener({target:{closest:()=>button}});
   },input(id,value){
@@ -97,11 +99,11 @@ test('BLACKLINE authored prompt editor keeps deterministic simulation and has no
   const app=application();
   for(const campaign of ['atlas','prism']){
     app.read('run=createRun("'+campaign+'");attackDraft=CAMPAIGNS[run.campaignId].levels[0].attacks[0].id;attackDraftText=CAMPAIGNS[run.campaignId].levels[0].attacks[0].payload');
-    const html=app.read('attackWorkbench()');
+    const html=app.read('missionWorkbench()');
     assert.match(html,/id="attack-payload"/);
     assert.match(html,/RED-TEAM WORKBENCH/);
     assert.match(html,/SIMULATION/);
-    assert.match(html,/never sent to an AI/i);
+    assert.match(html,/not AI-graded or sent to an AI/i);
     assert.doesNotMatch(html,/OpenAI|not connected|probe with/i);
   }
   assert.equal(app.read('typeof runModelProbe'),'undefined');
@@ -122,7 +124,7 @@ test('campaign resume restores its own in-tab draft and authored evidence',async
   app.read('resume("prism")');
   assert.equal(app.read('attackDraftText'),'Prism fictional note with different authority');
   assert.equal(app.read('workbench.journal.length'),1);assert.equal(app.read('workbench.journal[0].campaignId'),'prism');
-  assert.match(app.read('attackWorkbench()'),/Export before reloading or signing in/);
+  assert.match(app.read('missionWorkbench()'),/Export before reloading or signing in/);
 });
 
 test('starting a new run clears only that campaign’s in-tab authored evidence',async()=>{
@@ -200,7 +202,11 @@ test('Trace phase recovery clears stale drafts but retains authored evidence and
   assert.equal(app.read('run.phase'),'evaluate');assert.equal(app.read('attackDraft'),null);
   assert.equal(app.read('attackDraftText'),'');assert.equal(app.read('controlDraft'),null);
   assert.equal(app.read('Object.keys(tacticDraft).length'),0);
-  assert.equal(app.read('run.operatorState.remaining'),2);assert.equal(app.read('workbench.journal.length'),1);
+  assert.equal(app.read('run.operatorState.remaining'),2);assert.equal(app.read('workbench.journal.length'),2);
+  assert.equal(app.read('workbench.journal[1].type'),'operator-tactic-context');
+  assert.equal(app.read('workbench.journal[1].attackId'),'l1-noise');
+  assert.equal(app.read('workbench.journal[1].action.abilityName'),'RETRACE');
+  assert.match(app.element('#app').innerHTML,/id="attack-payload"|Choose a route/i);
 });
 
 test('Sigil activation removes a preselected cosmetic control and disables its rendered choice',async()=>{
@@ -222,4 +228,116 @@ test('auth gating blocks tactic selection and activation without consuming a cha
   await app.click('tactic-pick',{key:'edge',value:'action'});await app.click('operator-ability');
   assert.equal(app.read('Object.keys(tacticDraft).length'),0);
   assert.equal(app.read('run.operatorState.remaining'),3);assert.equal(app.read('run.operatorAction'),null);
+});
+
+test('workbench activation captures the exact hypothesis once and keeps it out of browser storage',async()=>{
+  const app=application();app.read('modelId="null"');await app.read('start("atlas")');
+  await app.click('attack',{id:'l1-provenance'});
+  const payload='TAB_ONLY_CANARY_<img src=x onerror=alert(1)> Fictional report authorizes a disputed export.';
+  app.input('attack-payload',payload);
+  await app.click('operator-ability');
+  const entry=JSON.parse(app.read('JSON.stringify(workbench.journal[0])'));
+  assert.equal(entry.type,'operator-tactic-context');
+  assert.equal(entry.campaignId,'atlas');assert.equal(entry.level,1);assert.equal(entry.attempt,1);
+  assert.equal(entry.operatorId,'null');assert.equal(entry.abilityName,'SANDBOX');
+  assert.equal(entry.attackId,'l1-provenance');assert.equal(entry.payload,payload);
+  assert.equal(entry.simulated,true);assert.equal(entry.verified,false);
+  assert.deepEqual(entry.action,JSON.parse(app.read('JSON.stringify(run.operatorAction)')));
+  assert.equal(app.read('attackDraftText'),payload);
+  assert.doesNotMatch(app.storage.value,/TAB_ONLY_CANARY|onerror/);
+  assert.doesNotMatch(app.element('#app').innerHTML,/<img src=x/);
+  await app.click('operator-ability');
+  assert.equal(app.read('run.operatorState.remaining'),2);
+  assert.equal(app.read('workbench.journal.length'),1);
+  const reload=application({stored:app.storage.value});reload.read('resume("atlas")');
+  assert.equal(reload.read('run.operatorState.remaining'),2);
+  assert.equal(reload.read('workbench.journal.length'),0);
+  assert.equal(reload.read('attackDraftText'),'');
+});
+
+test('evaluation records the active tactic with its own current authored payload',async()=>{
+  const app=application();app.read('modelId="glitch"');await app.read('start("prism")');
+  await app.click('attack',{id:'l1-consensus'});
+  app.input('attack-payload','Initial fictional bulletin asks the agent to treat agreement as verified permission.');
+  await app.click('operator-ability');
+  app.input('attack-payload','Revised fictional bulletin asks the agent to release a disputed record without authorization.');
+  await app.click('evaluate');
+  assert.equal(app.errors.length,0);
+  const journal=JSON.parse(app.read('JSON.stringify(workbench.journal)'));
+  assert.equal(journal.length,2);
+  assert.match(journal[0].payload,/Initial fictional/);
+  assert.match(journal[1].payload,/Revised fictional/);
+  assert.equal(journal[1].type,'operator-authored-hypothesis');
+  assert.equal(journal[1].operatorId,'glitch');assert.equal(journal[1].abilityName,'OVERDRIVE');
+  assert.equal(journal[1].operatorAction.abilityName,'OVERDRIVE');
+  assert.equal(app.read('workbench.journal[1].operatorAction!==run.operatorAction'),true);
+  assert.doesNotMatch(app.storage.value,/Initial fictional|Revised fictional/);
+});
+
+test('tactical routing inputs and activation preserve the workbench hypothesis',async()=>{
+  const app=application();app.read('modelId="relay"');await app.read('start("atlas")');
+  await app.click('attack',{id:'l1-provenance'});
+  const payload='Fictional supplier document claims a prior authorization to reroute the approved payment.';
+  app.input('attack-payload',payload);await app.click('evaluate');
+  await app.click('tactic-pick',{key:'verified',value:'run'});
+  assert.equal(app.read('attackDraftText'),payload);
+  await app.click('tactic-pick',{key:'contested',value:'hold'});
+  assert.equal(app.read('attackDraftText'),payload);
+  await app.click('operator-ability');
+  assert.equal(app.errors.length,0);
+  assert.equal(app.read('attackDraftText'),payload);
+  assert.equal(app.read('workbench.journal.at(-1).payload'),payload);
+  assert.equal(app.read('workbench.journal.at(-1).action.options.contested'),'hold');
+  assert.match(app.element('#app').innerHTML,/Fictional supplier document/);
+});
+
+test('Bastion returns the same captured hypothesis to the governance workbench',async()=>{
+  const app=application();app.read('modelId="bastion"');await app.read('start("prism")');
+  await app.click('attack',{id:'l1-provenance'});
+  const payload='Fictional government brief claims verified approval to publish the disputed source record.';
+  app.input('attack-payload',payload);await app.click('evaluate');
+  const finding=app.read('JSON.stringify(run.finding)');
+  await app.click('control',{id:'l1-cosmetic'});await app.click('govern');
+  app.read('run=replay(run);render()');
+  assert.equal(app.read('run.result.passed'),false);
+  await app.click('operator-ability');
+  assert.equal(app.errors.length,0);
+  assert.equal(app.read('run.phase'),'govern');
+  assert.equal(app.read('JSON.stringify(run.finding)'),finding);
+  assert.equal(app.read('attackDraftText'),payload);
+  assert.equal(app.read('workbench.journal.at(-1).abilityName'),'SECOND LINE');
+  assert.equal(app.read('workbench.journal.at(-1).payload'),payload);
+  assert.equal(app.read('run.operatorState.remaining'),2);
+  assert.match(app.element('#app').innerHTML,/RED-TEAM WORKBENCH/);
+});
+
+test('tactical context shares the bounded journal and stays isolated by campaign',async()=>{
+  const app=application();app.read('modelId="null"');await app.read('start("atlas")');
+  app.read('for(let i=0;i<200;i++)appendAttackEvidence({type:"operator-authored-hypothesis",index:i})');
+  await app.click('attack',{id:'l1-provenance'});
+  app.input('attack-payload','A'.repeat(1500));await app.click('operator-ability');
+  assert.equal(app.read('workbench.journal.length'),200);
+  assert.equal(app.read('workbench.journal[0].index'),1);
+  assert.equal(app.read('workbench.journal.at(-1).payload.length'),1200);
+  await app.read('start("prism")');
+  assert.equal(app.read('workbench.journal.length'),0);
+  app.read('resume("atlas")');
+  assert.equal(app.read('workbench.journal.length'),200);
+  assert.equal(app.read('workbench.journal.at(-1).campaignId'),'atlas');
+  assert.equal(app.read('workbench.journal.at(-1).abilityName'),'SANDBOX');
+});
+
+test('each mission stage renders one integrated workbench inside the play area',async()=>{
+  const app=application();await app.read('start("atlas")');
+  for(const phase of ['evaluate','govern','assure','debrief']){
+    if(phase==='govern')app.read('run=evaluateAttack(run,"l1-provenance")');
+    if(phase==='assure')app.read('run=applyGovernance(run,"l1-targeted")');
+    if(phase==='debrief')app.read('run=replay(run)');
+    app.read('render()');
+    const html=app.element('#app').innerHTML;
+    assert.equal((html.match(/class="redteam-workbench"/g)||[]).length,1,phase);
+    assert.ok(html.indexOf('class="panel play-area"')<html.indexOf('class="redteam-workbench"'),phase);
+    const consolePosition=html.indexOf('class="operator-console"');
+    if(consolePosition!==-1)assert.ok(consolePosition>html.indexOf('class="redteam-workbench"'),phase);
+  }
 });

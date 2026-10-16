@@ -1,0 +1,145 @@
+/* BLACKLINE / The payload, specialist tool, and evidence share one working surface. */
+.redteam-workbench{
+  --wb-accent:var(--operator,#77eceb);--wb-line:#4b6b734f;--wb-muted:#a9c1c5;
+  container:redteam-workbench / inline-size;position:relative;isolation:isolate;
+  margin:24px 0;border:1px solid #4c7077;border-top:2px solid var(--wb-accent);
+  background:linear-gradient(145deg,#15272e,#0a151c 65%);color:#d9e7e4;
+  box-shadow:0 12px 30px #0002;min-width:0;overflow-wrap:anywhere;
+}
+.redteam-workbench:before{content:'';position:absolute;top:-2px;left:0;width:62px;height:2px;background:#edfce9;pointer-events:none;box-shadow:0 0 15px var(--wb-accent)}
+.workbench-header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px 18px;padding:19px 20px;border-bottom:1px solid var(--wb-line);background:linear-gradient(90deg,#24404966,#172a2e22)}
+.workbench-header .eyebrow{font-size:10px;letter-spacing:1.2px;line-height:1.5;color:var(--wb-accent)}
+.workbench-header .eyebrow:before{width:18px}
+.workbench-header h2,.workbench-header h3{margin:7px 0 0;font:600 27px/1.08 var(--display);letter-spacing:.25px;text-transform:uppercase;color:#eff6eb}
+.workbench-header p,.workbench-header small{display:block;margin:5px 0 0;font:400 11px/1.5 var(--mono);color:#b8ced0}
+.workbench-identity{min-width:0}
+.workbench-identity>span{display:block;font:500 10px/1.6 var(--mono);letter-spacing:.7px;color:var(--wb-accent)}
+.workbench-phase{display:inline-flex;align-items:center;gap:7px;padding:7px 9px;border:1px solid #709c9b77;background:#07161b;color:var(--wb-accent);font:500 10px/1.5 var(--mono);letter-spacing:.6px;white-space:nowrap}
+.workbench-phase:before{content:'';display:block;width:5px;height:5px;border:1px solid currentColor;background:currentColor;box-shadow:0 0 8px #a9e5dc55}
+.workbench-layout{display:grid;grid-template-columns:minmax(0,1fr);gap:0;min-width:0}
+.workbench-editor,.workbench-tool{min-width:0;padding:20px}
+.workbench-editor+.workbench-tool{border-top:1px solid var(--wb-line);background:#07141b66}
+.workbench-route{padding:13px 15px;margin:0 0 18px;background:#071218;border:1px solid #42646c70;border-left:2px solid var(--wb-accent);min-width:0}
+.workbench-route label,.workbench-route>span,.workbench-route small{display:block;margin:0 0 7px;font:500 10px/1.5 var(--mono);letter-spacing:.7px;color:#a4c1c5;text-transform:uppercase}
+.workbench-route strong{display:block;font:600 18px/1.3 var(--display);color:#ebf4e8;letter-spacing:.25px}
+.workbench-route p{margin:8px 0 0;font:400 13px/1.6 var(--body);color:#adc5c8}
+.workbench-focus{position:relative;margin:0 0 18px;padding:0 0 17px;border-bottom:1px solid var(--wb-line)}
+.workbench-focus label,.workbench-focus>span,.workbench-focus small{display:block;font:500 10px/1.5 var(--mono);letter-spacing:.6px;text-transform:uppercase;color:var(--wb-accent);margin:0 0 7px}
+.workbench-focus h3{font:600 24px/1.15 var(--display);margin:5px 0 8px;letter-spacing:.25px;color:#edf4e8}
+.workbench-focus p{font:400 14px/1.65 var(--body);margin:0;color:#bfd2d0}
+.workbench-focus p+small{margin:12px 0 0;padding:9px 11px;background:#07171b;border-left:2px solid var(--wb-accent);font-size:9px;line-height:1.7;letter-spacing:.2px}
+.workbench-editor>label,.redteam-workbench label[for="attack-payload"]{display:block;margin:0 0 9px;font:500 10px/1.7 var(--mono);letter-spacing:.5px;color:#bfdbd9}
+.redteam-workbench #attack-payload{display:block;min-height:174px;width:100%;resize:vertical;border:1px solid #64878d;background:linear-gradient(#071117,#08151c);padding:14px 15px;border-radius:0;font:400 14px/1.7 var(--mono);color:#e2eeea;box-shadow:inset 0 1px 12px #0002;caret-color:var(--wb-accent);transition:border-color .18s,box-shadow .18s;scroll-margin:100px}
+.redteam-workbench #attack-payload:focus{border-color:var(--wb-accent);outline:2px solid var(--wb-accent);outline-offset:3px;box-shadow:inset 0 0 20px #8ac9c508}
+.redteam-workbench .workbench-actions{display:flex;flex-wrap:wrap;gap:9px;margin:12px 0 0}
+.redteam-workbench .workbench-actions .text-button{display:flex;align-items:center;justify-content:center;flex:1 1 170px;min-height:44px;padding:11px 12px;border:1px solid #526f77;background:#12242c;font:500 10px/1.6 var(--mono);letter-spacing:.25px;color:#c9ddda;text-align:center;transition:background .18s,border-color .18s}
+.redteam-workbench .workbench-actions .text-button:hover{border-color:var(--wb-accent);background:#203940;color:#f0f6e9}
+.redteam-workbench button:focus-visible,.redteam-workbench summary:focus-visible{outline:2px solid var(--wb-accent);outline-offset:3px}
+.redteam-workbench .workbench-audit{margin:14px 0 0;padding:12px 14px;border-left:2px solid var(--wb-accent);background:#1e3c3c66;color:#d3e6df;font:400 13px/1.7 var(--body)}
+.workbench-empty{padding:18px;border:1px dashed #5b7a7e;background:#09171d;color:#bfd3d3;font:400 14px/1.7 var(--body)}
+.workbench-empty:before{content:'+';display:block;width:28px;height:28px;border:1px solid #688c8c;color:var(--wb-accent);font:400 22px/24px var(--mono);text-align:center;margin-bottom:12px}
+.workbench-empty h3{font:600 23px/1.15 var(--display);color:#e5f0e7;margin:0 0 8px}
+.workbench-empty p{margin:0;font:400 14px/1.7 var(--body)}
+.workbench-empty>b{display:block;font:600 23px/1.2 var(--display);margin:0 0 8px;color:#e5f0e7}
+.workbench-captured:before{content:'↳';border-color:#526f76;color:#afccce}
+.workbench-source{margin:0;border:1px solid #476870;background:#08151b;min-width:0}
+.workbench-source summary{position:relative;min-height:48px;padding:14px 15px;cursor:pointer;color:#bdd8d6;font:500 11px/1.65 var(--mono);list-style-position:inside;transition:background .18s}
+.workbench-source summary:hover{background:#20393b66;color:#edf5ea}
+.workbench-source[open] summary{border-bottom:1px solid var(--wb-line)}
+.workbench-source summary::marker{color:var(--wb-accent)}
+.workbench-source summary>span{display:block;margin:5px 0 0;padding-left:15px;font:400 9px/1.65 var(--mono);letter-spacing:.25px;color:#92afb5}
+.workbench-source pre,.workbench-source .operator-payload{margin:0;padding:16px;max-height:290px;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;word-break:normal;background:#061017;color:#c7ded8;font:400 12px/1.8 var(--mono);tab-size:2}
+.workbench-source p{margin:0;padding:14px 16px;font:400 13px/1.65 var(--body);color:#afc7ca}
+.workbench-context{display:flex;align-items:flex-start;gap:9px;margin:14px 0 0;padding:11px 13px;border:1px solid #54796c70;background:#23433833;color:#c7dfce;font:400 12px/1.65 var(--body)}
+.workbench-context:before{content:'↳';font:500 17px/1.3 var(--mono);flex:none;color:var(--wb-accent)}
+.workbench-snapshot-note{margin:0 0 15px;padding:12px 13px;border:1px solid #7e729c70;background:#30294244;font:400 12px/1.65 var(--body);color:#c4c5d5}
+.workbench-snapshot-note b{display:block;margin-bottom:5px;font:500 10px/1.65 var(--mono);color:#d2b8f4}
+.workbench-footnote{display:block;margin:0;padding:15px 20px;border-top:1px solid var(--wb-line);background:#07111799;font:400 11px/1.65 var(--body);color:#a9c1c5}
+.workbench-footnote strong{font-weight:600;color:#d4e1d7}
+
+/* A tool that is not yet ready occupies one quiet line of the working surface. */
+.workbench-upcoming{display:block;padding:0;min-width:0}
+.workbench-upcoming>span,.workbench-upcoming .micro{font:500 10px/1.5 var(--mono);letter-spacing:.5px;color:var(--wb-accent);text-transform:uppercase}
+.workbench-upcoming h3,.workbench-upcoming h4{font:600 25px/1.15 var(--display);color:#e4efe6;margin:4px 0 7px}
+.workbench-upcoming p{grid-column:1/-1;margin:0;font:400 13px/1.65 var(--body);color:#b5cccd}
+.workbench-upcoming small{font:400 11px/1.65 var(--mono);color:#a7c1c4}
+.workbench-tool-status{display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:8px 15px;margin-bottom:9px;font:500 10px/1.65 var(--mono);color:#a9c3c6;text-transform:uppercase}
+.workbench-tool-status>span{flex:1 1 160px;min-width:0;letter-spacing:.25px}
+.workbench-tool-status>b{flex:none;color:var(--wb-accent);font-weight:500;letter-spacing:.3px}
+.workbench-upcoming .workbench-tool-phase{display:inline-block;margin:13px 0 10px;padding:5px 8px;border:1px solid #52777670;background:#08171c;font-size:9px;line-height:1.65;letter-spacing:.5px;color:var(--wb-accent)}
+.workbench-upcoming>small{display:block;font:400 11px/1.7 var(--body);color:#9eb8bd}
+.workbench-upcoming .op-charge-bank{align-self:start;justify-self:end;margin:0}
+.workbench-upcoming .op-status{font-size:9px;padding:5px 8px;line-height:1.55}
+
+/* Preserve the real tactical interactions while removing duplicated outer panels. */
+.redteam-workbench .operator-console{margin:0;border:0;background:none;box-shadow:none;container:operator-panel / inline-size}
+.redteam-workbench .op-console-head{padding:0 0 15px;border-bottom:1px solid var(--wb-line);background:none;gap:12px}
+.redteam-workbench .op-identity{gap:11px;flex-basis:180px}
+.redteam-workbench .op-identity .operator-portrait{width:44px;height:44px}
+.redteam-workbench .op-title h3{font-size:25px;margin:4px 0 0}
+.redteam-workbench .op-title>span{font-size:9px;line-height:1.6;letter-spacing:.25px}
+.redteam-workbench .op-charge-bank{font-size:10px;gap:4px}
+.redteam-workbench .op-charge-bank>span{min-width:9px;min-height:18px;padding:0}
+.redteam-workbench .op-charge-bank>b{margin-left:4px}
+.redteam-workbench .op-console-copy{padding:15px 0 0;font-size:13px;line-height:1.65}
+.redteam-workbench .op-console-copy p{margin:0 0 11px}
+.redteam-workbench .op-console-copy .op-status{font-size:9px;padding:5px 7px}
+.redteam-workbench .operator-console>.wire-path,.redteam-workbench .operator-console>.routing-board{margin:16px 0 0}
+.redteam-workbench .wire-path{gap:8px;padding-top:10px}
+.redteam-workbench .wire-path legend{font-size:12px;line-height:1.6}
+.redteam-workbench .wire-node{min-height:88px;padding:12px 8px}
+.redteam-workbench .wire-node b{font:600 17px/1.2 var(--display);margin-bottom:6px;letter-spacing:.1px}
+.redteam-workbench .wire-node>span{font-size:11px;line-height:1.5}
+.redteam-workbench .routing-row{padding:12px;gap:10px;grid-template-columns:minmax(90px,.8fr) minmax(0,1.6fr)}
+.redteam-workbench .route-label{font-size:11px;line-height:1.6}
+.redteam-workbench .route-options{gap:5px}
+.redteam-workbench .route-options button{min-width:0;min-height:44px;flex-basis:58px;font-size:10px;padding:10px 7px}
+.redteam-workbench .op-action-body{padding:15px 0 0}
+.redteam-workbench .op-action-body .op-activate{min-height:49px;margin-top:0;padding:14px 16px;font-size:11px}
+.redteam-workbench .op-action-body .op-availability{margin:10px 0 0;font-size:11px;line-height:1.65}
+.redteam-workbench .operator-console>.kit-tradeoff,.redteam-workbench .operator-console>.op-target{padding:12px 0 0;font-size:11px;line-height:1.7;color:#b1c8c9}
+.redteam-workbench .operator-console>.op-availability{padding:12px 0 0;margin:0;font-size:11px;line-height:1.7}
+.redteam-workbench .tactical-report{margin:15px 0 0;padding:15px;border:1px solid #567b7966;border-left:2px solid var(--wb-accent);background:linear-gradient(110deg,#1d383b88,#07151b55)}
+.redteam-workbench .tactical-report>header{gap:6px 15px;padding-bottom:10px;margin-bottom:10px}
+.redteam-workbench .tactical-report header>span{font-size:9px;line-height:1.65;letter-spacing:.25px}
+.redteam-workbench .tactical-report p{font-size:12px;line-height:1.7;margin:8px 0;color:#c1d4d2}
+.redteam-workbench .report-lines{margin-top:11px}
+.redteam-workbench .report-lines>.tactical-check{padding:11px 0}
+.redteam-workbench .report-lines>.tactical-check:last-child{padding-bottom:0}
+.redteam-workbench .tactical-check h4{font-size:20px;margin:0 0 5px;line-height:1.2}
+.redteam-workbench .tactical-check>strong{font-size:11px;line-height:1.65}
+.redteam-workbench .report-lines>.tactical-check.pass,.redteam-workbench .report-lines>.tactical-check.fail{padding:10px 12px;margin-top:7px}
+.redteam-workbench .fork-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:12px}
+.redteam-workbench .fork-card{padding:12px 10px}
+.redteam-workbench .fork-card h4{font-size:20px;line-height:1.2;margin:0 0 9px}
+.redteam-workbench .fork-card p{font-size:11px;line-height:1.65;margin:8px 0 0}
+.redteam-workbench .fork-card>strong.fork-metric{font-size:11px;line-height:1.65;padding:8px 0 0}
+
+@container redteam-workbench (min-width:780px){
+  .workbench-layout{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+  .workbench-editor+.workbench-tool{border-top:0;border-left:1px solid var(--wb-line)}
+}
+@container redteam-workbench (max-width:540px){
+  .workbench-header{padding:17px 16px;gap:10px}.workbench-header h2,.workbench-header h3{font-size:25px}
+  .workbench-header .eyebrow{font-size:9px;letter-spacing:.7px}.workbench-phase{font-size:9px;padding:6px 8px}
+  .workbench-editor,.workbench-tool{padding:17px 16px}.workbench-footnote{padding:14px 16px}
+  .workbench-focus h3{font-size:23px}.workbench-focus p{font-size:13px}.workbench-route{padding:12px 13px}
+  .redteam-workbench .fork-grid{grid-template-columns:1fr}.redteam-workbench .fork-card{padding:12px}
+  .redteam-workbench .fork-card h4{font-size:20px;margin-bottom:6px}.redteam-workbench .fork-card p{margin-top:6px}
+  .redteam-workbench .fork-card>strong.fork-metric{border:0;padding:0}
+  .redteam-workbench .routing-row{grid-template-columns:1fr;gap:8px}
+  .redteam-workbench .wire-node b{font-size:16px}.redteam-workbench .wire-node{padding:11px 6px}
+}
+@container redteam-workbench (max-width:350px){
+  .workbench-header{align-items:flex-start}.workbench-phase{white-space:normal}.workbench-header .eyebrow:before{width:12px}
+  .redteam-workbench #attack-payload{padding:12px;font-size:13px;min-height:185px}
+  .redteam-workbench .workbench-actions .text-button{flex-basis:100%;font-size:10px}
+  .redteam-workbench .op-console-head{gap:11px}.redteam-workbench .op-identity{flex-basis:160px}
+  .redteam-workbench .op-identity .operator-portrait{width:38px;height:38px}.redteam-workbench .op-title h3{font-size:23px}
+  .redteam-workbench .wire-path{grid-template-columns:1fr;gap:7px}.redteam-workbench .wire-path:before{display:none}
+  .redteam-workbench .wire-node{display:flex;justify-content:space-between;align-items:center;gap:10px;min-height:51px;padding:10px 12px;text-align:left}
+  .redteam-workbench .wire-node b{max-width:130px;font-size:17px;margin:0}.redteam-workbench .wire-node>span{max-width:115px;text-align:right}
+  .redteam-workbench .tactical-report{padding:12px}.workbench-upcoming{grid-template-columns:1fr}.workbench-upcoming .op-charge-bank{justify-self:start}
+}
+@media(max-width:620px){.redteam-workbench{margin:20px 0}.redteam-workbench .workbench-actions{display:flex;gap:9px}}
+@media(prefers-reduced-motion:reduce){.redteam-workbench #attack-payload,.redteam-workbench .workbench-actions .text-button,.workbench-source summary{transition:none}.redteam-workbench:before{box-shadow:none}}

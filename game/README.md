@@ -48,7 +48,9 @@ node game/preview.mjs
 
 Open [http://127.0.0.1:4189](http://127.0.0.1:4189). The preview binds only to the local machine and serves `game/dist/`. Localhost and `127.0.0.1` explicitly support unsigned simulation practice. Stop the preview with Ctrl+C.
 
-The attack workbench lets players draft fictional untrusted messages. Their selected route determines the simulated outcome; the text is never sent to a model. Drafts and authored evidence stay in the current tab, separated by campaign. Export before reloading or signing in; exports retain the latest 200 entries per campaign.
+The red-team workbench keeps the selected operator’s tactical kit beside the fictional source draft and follows it through Evaluate, Govern, Assure, and the debrief. Each operator supplies a different field question; tools become usable at their required stage. Null’s sandbox records which route it previewed and warns if the selected route changes. Glitch identifies whether the current route receives its boost. Captured source text remains inspectable during later phases in the same tab.
+
+The attack workbench lets players draft fictional untrusted messages. Their selected route determines the simulated outcome; the text is never sent to a model. Drafts and authored evidence stay in the current tab, separated by campaign. Activating a tactic captures its exact operator, route, source draft, and action report in the in-tab evidence journal; evaluating records the active tactic alongside the authored hypothesis. No authored text is added to persistent campaign saves. Export before reloading or signing in; exports retain the latest 200 entries per campaign, including tactical context entries.
 
 The browser saves game progress in local storage. Saves are validated before rendering; an invalid campaign save is discarded while valid progress in the other campaign is preserved. Scores and gates are local simulation data, not authoritative competition results. Use the game's evidence export to keep a separate copy; clearing site data removes local progress. Authentication tokens, when used by a hosted deployment, belong in tab-scoped session storage and must not be included in evidence exports.
 
@@ -67,6 +69,7 @@ The existing Agent Arena toolkit has its own tests and replay commands in the [r
 | `dist/index.html` | Game entry point |
 | `dist/app.js` | Interface, progression, browser persistence, and evidence export |
 | `dist/engine.js` | Campaigns, mission rules, scoring, and level gates |
+| `dist/workbench-ui.js`, `dist/workbench.css` | Integrated source drafting, stage-aware tactical tools, and captured evidence |
 | `dist/operators.js` | Immutable character identities and tactical kit metadata |
 | `dist/operator-ui.js`, `dist/operators.css` | Operator dossiers, tactical inputs, charge meters, and reports |
 | `dist/mission-context.js` | Human and institutional stakes for all 20 missions |
